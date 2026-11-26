@@ -73,7 +73,7 @@ interface AppStateContextValue {
 }
 
 const AppStateContext = createContext<AppStateContextValue | undefined>(undefined);
-const STORAGE_KEY = 'roktobondhu_bd_state_v1';
+const STORAGE_KEY = 'roktobondhu_bd_state_v2';
 
 interface PersistedShape {
   users: UserProfile[];
