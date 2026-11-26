@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoktoBondhu BD | Emergency Blood Donation Network Bangladesh</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            crimson: { 50:'#FEF2F2', 100:'#FEE2E2', 200:'#FECACA', 600:'#DC2626', 700:'#B91C1C', 800:'#991B1B', 900:'#7F1D1D' }
+          },
+          fontFamily: { sans: ['Inter', 'Hind Siliguri', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans">
+  <div id="app" class="flex flex-col min-h-screen"></div>
+
+  <script>
+    // ====== 5-TIER BANGLADESH ADMINISTRATIVE DATA ======
+    const LOCATIONS = [
+      { id:'div-dhaka', en:'Dhaka', bn:'ঢাকা', districts:[
+        { id:'dist-dhaka', en:'Dhaka', bn:'ঢাকা', upazilas:[
+          { id:'upz-shahbagh', en:'Shahbagh', bn:'শাহবাগ', postOffices:[
+            { id:'po-dhaka-gpo-1000', en:'Dhaka GPO / Ramna', bn:'ঢাকা জিপিও / রমনা', postCode:'1000', villages:[
+              { id:'vil-dmch-area', en:'DMCH & Bakshibazar', bn:'ঢামেক ও বকশীবাজার' },
+              { id:'vil-pg-hospital', en:'BMU / Shahbagh Circle', bn:'বিএমইউ / শাহবাগ চত্বর' }
+            ]}
+          ]},
+          { id:'upz-dhanmondi', en:'Dhanmondi', bn:'ধানমন্ডি', postOffices:[
+            { id:'po-dhanmondi-1205', en:'New Market / Dhanmondi', bn:'নিউ মার্কেট / ধানমন্ডি', postCode:'1205', villages:[
+              { id:'vil-kalabagan', en:'Kalabagan', bn:'কলাবাগান' },
+              { id:'vil-green-road', en:'Green Road', bn:'গ্রিন রোড' }
+            ]}
+          ]},
+          { id:'upz-mirpur', en:'Mirpur', bn:'মিরপুর', postOffices:[
+            { id:'po-mirpur-1216', en:'Mirpur TSO', bn:'মিরপুর টিএসও', postCode:'1216', villages:[
+              { id:'vil-mirpur-10', en:'Mirpur Section 10', bn:'মিরপুর সেকশন ১০' },
+              { id:'vil-pallabi', en:'Pallabi', bn:'পল্লবী' }
+            ]}
+          ]}
+        ]},
+        { id:'dist-gazipur', en:'Gazipur', bn:'গাজীপুর', upazilas:[
+          { id:'upz-tongi', en:'Tongi', bn:'টঙ্গী', postOffices:[
+            { id:'po-tongi-1710', en:'Tongi TSO', bn:'টঙ্গী টিএসও', postCode:'1710', villages:[
+              { id:'vil-college-gate', en:'College Gate', bn:'কলেজ গেট' }
+            ]}
+          ]}
+        ]}
+      ]},
+      { id:'div-chattogram', en:'Chattogram', bn:'চট্টগ্রাম', districts:[
+        { id:'dist-chattogram', en:'Chattogram', bn:'চট্টগ্রাম', upazilas:[
+          { id:'upz-panchlaish', en:'Panchlaish', bn:'পাঁচলাইশ', postOffices:[
+            { id:'po-chawkbazar-4203', en:'Chawkbazar', bn:'চকবাজার', postCode:'4203', villages:[
+              { id:'vil-cmch-area', en:'Chattogram Medical Area', bn:'চট্টগ্রাম মেডিকেল এলাকা' }
+            ]}
+          ]}
+        ]}
+      ]},
+      { id:'div-sylhet', en:'Sylhet', bn:'সিলেট', districts:[
+        { id:'dist-sylhet', en:'Sylhet', bn:'সিলেট', upazilas:[
+          { id:'upz-sylhet-sadar', en:'Sylhet Sadar', bn:'সিলেট সদর', postOffices:[
+            { id:'po-sylhet-3100', en:'Sylhet GPO', bn:'সিলেট জিপিও', postCode:'3100', villages:[
+              { id:'vil-kajolshah', en:'Kajolshah (SOMCH)', bn:'কাজলশাহ (সিওমেক)' }
+            ]}
+          ]}
+        ]}
+      ]},
+      { id:'div-rajshahi', en:'Rajshahi', bn:'রাজশাহী', districts:[
+        { id:'dist-rajshahi', en:'Rajshahi', bn:'রাজশাহী', upazilas:[
+          { id:'upz-boalia', en:'Boalia', bn:'বোয়ালিয়া', postOffices:[
+            { id:'po-rajshahi-gpo-6000', en:'Rajshahi GPO', bn:'রাজশাহী জিপিও', postCode:'6000', villages:[
+              { id:'vil-laxmipur-rmc', en:'Laxmipur (RMCH)', bn:'লক্ষ্মীপুর (রামেক)' }
+            ]}
+          ]}
+        ]}
+      ]},
+      { id:'div-khulna', en:'Khulna', bn:'খুলনা', districts:[
+        { id:'dist-khulna', en:'Khulna', bn:'খুলনা', upazilas:[
+          { id:'upz-sonadanga', en:'Sonadanga', bn:'সোনাডাঙ্গা', postOffices:[
+            { id:'po-sonadanga-9100', en:'Sonadanga', bn:'সোনাডাঙ্গা', postCode:'9100', villages:[
+              { id:'vil-boira', en:'Boira (KMCH)', bn:'বয়রা (খুমেক)' }
+            ]}
+          ]}
+        ]}
+      ]},
+      { id:'div-barishal', en:'Barishal', bn:'বরিশাল', districts:[
+        { id:'dist-barishal', en:'Barishal', bn:'বরিশাল', upazilas:[
+          { id:'upz-barishal-sadar', en:'Barishal Sadar', bn:'বরিশাল সদর', postOffices:[
+            { id:'po-barishal-8200', en:'Barishal Head PO', bn:'বরিশাল প্রধান ডাকঘর', postCode:'8200', villages:[
+              { id:'vil-band-road', en:'Band Road (SBMCH)', bn:'বান্দ রোড (শেবাচিম)' }
+            ]}
+          ]}
+        ]}
+      ]},
+      { id:'div-rangpur', en:'Rangpur', bn:'রংপুর', districts:[
+        { id:'dist-rangpur', en:'Rangpur', bn:'রংপুর', upazilas:[
+          { id:'upz-rangpur-sadar', en:'Rangpur Sadar', bn:'রংপুর সদর', postOffices:[
+            { id:'po-rangpur-5400', en:'Rangpur Head PO', bn:'রংপুর প্রধান ডাকঘর', postCode:'5400', villages:[
+              { id:'vil-medical-more', en:'Medical More (RpMCH)', bn:'মেডিকেল মোড় (রমেক)' }
+            ]}
+          ]}
+        ]}
+      ]},
+      { id:'div-mymensingh', en:'Mymensingh', bn:'ময়মনসিংহ', districts:[
+        { id:'dist-mymensingh', en:'Mymensingh', bn:'ময়মনসিংহ', upazilas:[
+          { id:'upz-mymensingh-sadar', en:'Mymensingh Sadar', bn:'ময়মনসিংহ সদর', postOffices:[
+            { id:'po-mymensingh-2200', en:'Mymensingh Head PO', bn:'ময়মনসিংহ প্রধান ডাকঘর', postCode:'2200', villages:[
+              { id:'vil-charpara', en:'Charpara (MMCH)', bn:'চরপাড়া (মমেক)' }
+            ]}
+          ]}
+        ]}
+      ]}
+    ];
+
+    const BLOOD_LABELS = { A_POS:'A+', A_NEG:'A-', B_POS:'B+', B_NEG:'B-', AB_POS:'AB+', AB_NEG:'AB-', O_POS:'O+', O_NEG:'O-' };
+    const COMPATIBLE = {
+      O_NEG:['O_NEG'], O_POS:['O_POS','O_NEG'], A_NEG:['A_NEG','O_NEG'],
+      A_POS:['A_POS','A_NEG','O_POS','O_NEG'], B_NEG:['B_NEG','O_NEG'],
+      B_POS:['B_POS','B_NEG','O_POS','O_NEG'], AB_NEG:['AB_NEG','A_NEG','B_NEG','O_NEG'],
+      AB_POS:['AB_POS','AB_NEG','A_POS','A_NEG','B_POS','B_NEG','O_POS','O_NEG']
+    };
+
+    const TEXT = {
+      en: {
+        brand:'RoktoBondhu BD', tag:'Unified Emergency Blood Network',
+        tabs:{ search:'Find Donors', requests:'Emergency Requests', dashboard:'Profile & Dashboard', guidelines:'Guidelines' },
+        postBtn:'Request Blood', signInBtn:'Sign In / Register', signOutBtn:'Sign Out', langBtn:'বাংলা',
+        heroTitle:'Every Drop Connects a Life Across Bangladesh',
+        heroSub:'One unified account to donate blood safely with 90-day medical cooldown protection or request urgent blood across all 8 divisions and 5-tier local areas.',
+        searchTitle:'Find Verified Blood Donors Near the Hospital',
+        compat:'Emergency Mode: Include Compatible Blood Groups',
+        call:'Call Now', wa:'WhatsApp', masked:'Phone masked by privacy setting',
+        reveal:'Confirm Match & Reveal Contact',
+        eligibleIn:'Eligible in {d} days', eligibleNow:'Eligible to donate now',
+        available:'Available', unavailable:'Unavailable', cooldown:'On Cooldown',
+        extend:'+48h Extend', share:'Social Share Card',
+        reqTitle:'Live Emergency Blood Requests',
+        dashTitle:'My Unified Profile & Dashboard',
+        guideTitle:'Bangladesh Blood Donation & 90-Day Cooldown Guidelines',
+        notSignedIn:'Sign in with your Bangladesh Mobile Number to manage your Donor & Requester profile, 90-day cooldown, and privacy settings.',
+        openAuth:'Sign In / Create Account'
+      },
+      bn: {
+        brand:'রক্তবন্ধু বিডি', tag:'সমন্বিত জরুরি রক্তদান নেটওয়ার্ক',
+        tabs:{ search:'রক্তদাতা খুঁজুন', requests:'জরুরি আবেদন', dashboard:'প্রোফাইল ও ড্যাশবোর্ড', guidelines:'নির্দেশিকা' },
+        postBtn:'রক্তের আবেদন', signInBtn:'সাইন ইন / নিবন্ধন', signOutBtn:'লগআউট', langBtn:'EN',
+        heroTitle:'এক ফোঁটা রক্তে গড়ে উঠুক বাংলাদেশের জীবনরক্ষাকারী বন্ধন',
+        heroSub:'একটি সমন্বিত অ্যাকাউন্টেই ৯০ দিনের নিরাপদ বিরতি হিসাবসহ রক্তদান করুন অথবা ৮টি বিভাগের ৫-স্তরের এলাকা অনুযায়ী জরুরি রক্তের আবেদন জানান।',
+        searchTitle:'হাসপাতালের কাছাকাছি যাচাইকৃত রক্তদাতা খুঁজুন',
+        compat:'জরুরি মোড: সামঞ্জস্যপূর্ণ রক্তের গ্রুপ অন্তর্ভুক্ত করুন',
+        call:'কল করুন', wa:'হোয়াটসঅ্যাপ', masked:'দাতার গোপনীয়তার কারণে নম্বর গোপন আছে',
+        reveal:'ম্যাচ নিশ্চিত করে নম্বর দেখুন',
+        eligibleIn:'{d} দিন পর উপযুক্ত', eligibleNow:'এখনই রক্তদানের জন্য উপযুক্ত',
+        available:'উপলব্ধ', unavailable:'অনুপলব্ধ', cooldown:'বিরতিতে আছেন',
+        extend:'+৪৮ ঘণ্টা বাড়ান', share:'সোশ্যাল শেয়ার কার্ড',
+        reqTitle:'চলমান জরুরি রক্তের আবেদনসমূহ',
+        dashTitle:'আমার সমন্বিত প্রোফাইল ও ড্যাশবোর্ড',
+        guideTitle:'বাংলাদেশ রক্তদান ও ৯০ দিনের বিরতি নির্দেশিকা',
+        notSignedIn:'আপনার দাতা ও আবেদনকারী প্রোফাইল, ৯০ দিনের বিরতি এবং গোপনীয়তা সেটিংস পরিচালনা করতে বাংলাদেশি মোবাইল নম্বর দিয়ে সাইন ইন করুন।',
+        openAuth:'সাইন ইন / অ্যাকাউন্ট তৈরি করুন'
+      }
+    };
+
+    const daysAgo = (d) => new Date(Date.now() - d * 86400000).toISOString();
+    const hoursFromNow = (h) => new Date(Date.now() + h * 3600000).toISOString();
+
+    const state = {
+      lang: 'en',
+      tab: 'search',
+      currentUserId: null,
+      confirmedDonors: new Set(),
+      search: { bloodGroup:'O_POS', compat:true, divisionId:'div-dhaka', districtId:'dist-dhaka', upazilaId:'', postOfficeId:'', villageId:'' },
+      shareReq: null,
+      showRequestModal: false,
+      showAuthModal: false,
+      authMode: 'login',
+      authMobile: '',
+      authPassword: '',
+      authConfirmPassword: '',
+      authShowPass: false,
+      authName: '',
+      authBlood: 'O_POS',
+      authLoc: { div:'div-dhaka', dist:'dist-dhaka', upz:'upz-dhanmondi', po:'po-dhanmondi-1205', vil:'vil-kalabagan' },
+      authError: '',
+      credentials: {},
+      toast: null,
+      users: [
+        { id:'usr-tanvir', name:'Tanvir Mahmud Hasan', mobile:'01711223344', whatsapp:'01711223344', blood:'O_POS', div:'div-dhaka', dist:'dist-dhaka', upz:'upz-shahbagh', po:'po-dhaka-gpo-1000', vil:'vil-dmch-area', manualAvailable:true, hidePhone:false, lastDonation:daysAgo(125), donations:6 },
+        { id:'usr-nusrat', name:'Nusrat Jahan Mim', mobile:'01812345678', whatsapp:'01812345678', blood:'A_POS', div:'div-dhaka', dist:'dist-dhaka', upz:'upz-dhanmondi', po:'po-dhanmondi-1205', vil:'vil-kalabagan', manualAvailable:true, hidePhone:true, lastDonation:daysAgo(35), donations:4 },
+        { id:'usr-farhan', name:'Farhan Sadik Chowdhury', mobile:'01911998877', whatsapp:'01911998877', blood:'O_NEG', div:'div-dhaka', dist:'dist-dhaka', upz:'upz-mirpur', po:'po-mirpur-1216', vil:'vil-mirpur-10', manualAvailable:true, hidePhone:true, lastDonation:daysAgo(180), donations:11 },
+        { id:'usr-sadia', name:'Sadia Afrin', mobile:'01788776655', whatsapp:'01788776655', blood:'O_POS', div:'div-dhaka', dist:'dist-gazipur', upz:'upz-tongi', po:'po-tongi-1710', vil:'vil-college-gate', manualAvailable:true, hidePhone:false, lastDonation:daysAgo(102), donations:2 },
+        { id:'usr-mehedi', name:'Mehedi Hasan Rony', mobile:'01611445566', whatsapp:'01611445566', blood:'B_POS', div:'div-chattogram', dist:'dist-chattogram', upz:'upz-panchlaish', po:'po-chawkbazar-4203', vil:'vil-cmch-area', manualAvailable:true, hidePhone:false, lastDonation:daysAgo(98), donations:3 }
+      ],
+      requests: [
+        { id:'req-1', requesterId:'usr-nusrat', patient:'Md. Abdur Rahim (62y)', blood:'O_POS', units:2, urgency:'EMERGENCY', hospital:'Dhaka Medical College Hospital (DMCH)', ward:'Cardiology Ward 202, Bed 18', div:'div-dhaka', dist:'dist-dhaka', upz:'upz-shahbagh', contact:'Kamrul Hasan', mobile:'01755667788', reason:'Urgent cardiac bypass surgery', status:'ACTIVE', expiresAt:hoursFromNow(42) },
+        { id:'req-2', requesterId:'usr-mehedi', patient:'Baby Ayesha Siddika', blood:'B_POS', units:1, urgency:'WITHIN_24H', hospital:'Chattogram Medical College Hospital', ward:'Pediatric Ward 9, Bed 4', div:'div-chattogram', dist:'dist-chattogram', upz:'upz-panchlaish', contact:'Salma Begum', mobile:'01833445566', reason:'Beta-Thalassemia Major regular transfusion', status:'IN_PROGRESS', expiresAt:hoursFromNow(34) },
+        { id:'req-3', requesterId:'usr-tanvir', patient:'Shafiqul Alam (48y)', blood:'A_POS', units:2, urgency:'SCHEDULED', hospital:'Sylhet MAG Osmani Medical College', ward:'Surgery Cabin 12', div:'div-sylhet', dist:'dist-sylhet', upz:'upz-sylhet-sadar', contact:'Nabil Alam', mobile:'01799887711', reason:'Orthopedic surgery blood backup', status:'ACTIVE', expiresAt:hoursFromNow(-4) }
+      ]
+    };
+
+    try {
+      const saved = localStorage.getItem('roktobondhu_final_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.users) state.users = parsed.users;
+        if (parsed.credentials) state.credentials = parsed.credentials;
+        if (parsed.requests) state.requests = parsed.requests;
+        if (parsed.currentUserId !== undefined) state.currentUserId = parsed.currentUserId;
+        if (parsed.lang) state.lang = parsed.lang;
+      }
+    } catch {}
+
+    function persist() {
+      try {
+        localStorage.setItem('roktobondhu_final_state', JSON.stringify({
+          users: state.users,
+          credentials: state.credentials,
+          requests: state.requests,
+          currentUserId: state.currentUserId,
+          lang: state.lang
+        }));
+      } catch {}
+    }
+
+    function notify(msg) {
+      state.toast = msg;
+      render();
+      setTimeout(() => { state.toast = null; render(); }, 3500);
+    }
+
+    function evalCooldown(u) {
+      if (!u.lastDonation) return { onCooldown:false, daysLeft:0, elapsed:null, status: u.manualAvailable ? 'AVAILABLE' : 'UNAVAILABLE' };
+      const elapsed = Math.max(0, Math.floor((Date.now() - new Date(u.lastDonation).getTime()) / 86400000));
+      const onCooldown = elapsed < 90;
+      return { onCooldown, daysLeft: onCooldown ? 90 - elapsed : 0, elapsed, status: onCooldown ? 'ON_COOLDOWN' : (u.manualAvailable ? 'AVAILABLE' : 'UNAVAILABLE') };
+    }
+
+    function getBadge(n) {
+      if (n >= 10) return 'LifeSaver (10+)';
+      if (n >= 5) return 'Gold Hero (5+)';
+      if (n >= 3) return 'Silver Hero (3+)';
+      if (n >= 1) return 'Bronze Hero (1+)';
+      return 'Member';
+    }
+
+    function maskPhone(p) { return p.slice(0,4) + '*****' + p.slice(-2); }
+
+    function resolveLoc(divId, distId, upzId, poId, vilId) {
+      const l = state.lang;
+      const div = LOCATIONS.find(x => x.id === divId);
+      const dist = div?.districts.find(x => x.id === distId);
+      const upz = dist?.upazilas.find(x => x.id === upzId);
+      const po = upz?.postOffices.find(x => x.id === poId);
+      const vil = po?.villages.find(x => x.id === vilId);
+      return [vil?.[l], po ? `${po[l]} (${po.postCode})` : '', upz?.[l], dist?.[l], div?.[l]].filter(Boolean).join(' → ');
+    }
+
+    function renderLocSelects(locObj, onChangeFn, allowAll) {
+      const l = state.lang;
+      const selDiv = LOCATIONS.find(d => d.id === locObj.div);
+      const dists = selDiv ? selDiv.districts : [];
+      const selDist = dists.find(d => d.id === locObj.dist);
+      const upzs = selDist ? selDist.upazilas : [];
+      const selUpz = upzs.find(u => u.id === locObj.upz);
+      const pos = selUpz ? selUpz.postOffices : [];
+      const selPo = pos.find(p => p.id === locObj.po);
+      const vils = selPo ? selPo.villages : [];
+      return `
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          <select onchange="${onChangeFn}('div',this.value)" class="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
+            <option value="">${allowAll ? 'All Divisions' : 'Division'}</option>
+            ${LOCATIONS.map(d => `<option value="${d.id}" ${locObj.div===d.id?'selected':''}>${d[l]}</option>`).join('')}
+          </select>
+          <select onchange="${onChangeFn}('dist',this.value)" ${!dists.length?'disabled':''} class="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white disabled:bg-slate-100">
+            <option value="">${allowAll ? 'All Districts' : 'District'}</option>
+            ${dists.map(d => `<option value="${d.id}" ${locObj.dist===d.id?'selected':''}>${d[l]}</option>`).join('')}
+          </select>
+          <select onchange="${onChangeFn}('upz',this.value)" ${!upzs.length?'disabled':''} class="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white disabled:bg-slate-100">
+            <option value="">${allowAll ? 'All Upazilas' : 'Upazila/Thana'}</option>
+            ${upzs.map(u => `<option value="${u.id}" ${locObj.upz===u.id?'selected':''}>${u[l]}</option>`).join('')}
+          </select>
+          <select onchange="${onChangeFn}('po',this.value)" ${!pos.length?'disabled':''} class="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white disabled:bg-slate-100">
+            <option value="">${allowAll ? 'All Post Offices' : 'Post Office'}</option>
+            ${pos.map(p => `<option value="${p.id}" ${locObj.po===p.id?'selected':''}>${p[l]} (${p.postCode})</option>`).join('')}
+          </select>
+          <select onchange="${onChangeFn}('vil',this.value)" ${!vils.length?'disabled':''} class="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white disabled:bg-slate-100">
+            <option value="">${allowAll ? 'All Villages' : 'Village/Area'}</option>
+            ${vils.map(v => `<option value="${v.id}" ${locObj.vil===v.id?'selected':''}>${v[l]}</option>`).join('')}
+          </select>
+        </div>
+      `;
+    }
+
+    function render() {
+      const t = TEXT[state.lang];
+      const l = state.lang;
+      const cu = state.users.find(u => u.id === state.currentUserId) || null;
+
+      const accepted = state.search.compat ? COMPATIBLE[state.search.bloodGroup] : [state.search.bloodGroup];
+      const ranked = state.users
+        .filter(u => u.id !== state.currentUserId && accepted.includes(u.blood) && evalCooldown(u).status === 'AVAILABLE')
+        .map(u => {
+          let score = 4, label = l==='bn' ? 'অন্যান্য বিভাগ' : 'Other Division';
+          if (state.search.districtId && u.dist === state.search.districtId && state.search.upazilaId && u.upz === state.search.upazilaId) { score = 1; label = l==='bn' ? 'সেরা ম্যাচ · একই থানা' : 'Top Match · Same Thana'; }
+          else if (state.search.districtId && u.dist === state.search.districtId) { score = 2; label = l==='bn' ? 'স্কোর ২ · একই জেলা' : 'Score 2 · Same District'; }
+          else if (state.search.divisionId && u.div === state.search.divisionId) { score = 3; label = l==='bn' ? 'স্কোর ৩ · একই বিভাগ' : 'Score 3 · Same Division'; }
+          return { u, score, label };
+        })
+        .sort((a,b) => a.score - b.score || (b.u.donations - a.u.donations));
+
+      const activeReqs = state.requests.filter(r => r.status === 'ACTIVE' || r.status === 'IN_PROGRESS').length;
+      const eligibleDonors = state.users.filter(u => evalCooldown(u).status === 'AVAILABLE').length;
+
+      const normalizedInput = state.authMobile.trim().replace(/^\+?88/, '');
+      const existingMatch = /^(01[3-9]\d{8})$/.test(normalizedInput) && state.users.some(u => u.mobile === normalizedInput);
+
+      document.getElementById('app').innerHTML = `
+        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+          <div class="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
+            <button onclick="setTab('search')" class="flex items-center gap-2.5 text-left">
+              <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-crimson-700 text-white font-black text-lg">🩸</span>
+              <div>
+                <div class="font-extrabold text-slate-900 text-sm sm:text-base">${t.brand}</div>
+                <div class="text-[11px] text-slate-500 hidden sm:block">${t.tag}</div>
+              </div>
+            </button>
+            <nav class="hidden md:flex gap-1">
+              ${['search','requests','dashboard','guidelines'].map(k => `
+                <button onclick="setTab('${k}')" class="rounded-xl px-3.5 py-2 text-sm font-semibold ${state.tab===k?'bg-crimson-50 text-crimson-700':'text-slate-600 hover:bg-slate-100'}">${t.tabs[k]}</button>
+              `).join('')}
+            </nav>
+            <div class="flex items-center gap-2">
+              <button onclick="toggleLang()" class="rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs font-bold hover:bg-slate-50">${t.langBtn}</button>
+              <button onclick="openReqModal()" class="hidden sm:inline-block rounded-xl bg-crimson-700 px-3 py-2 text-xs font-bold text-white hover:bg-crimson-800">+ ${t.postBtn}</button>
+              ${cu ? `
+                <button onclick="setTab('dashboard')" class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100">
+                  <span class="max-w-[90px] truncate">${cu.name}</span>
+                  <span class="rounded bg-crimson-700 px-1.5 py-0.5 text-[10px] text-white">${BLOOD_LABELS[cu.blood]}</span>
+                </button>
+                <button onclick="signOutUser()" class="rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">${t.signOutBtn}</button>
+              ` : `
+                <button onclick="openAuthModal()" class="rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800">${t.signInBtn}</button>
+              `}
+            </div>
+          </div>
+          <div class="flex md:hidden border-t border-slate-100 px-2 py-1.5 gap-1 overflow-x-auto">
+            ${['search','requests','dashboard','guidelines'].map(k => `
+              <button onclick="setTab('${k}')" class="rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${state.tab===k?'bg-crimson-50 text-crimson-700':'text-slate-600'}">${t.tabs[k]}</button>
+            `).join('')}
+          </div>
+        </header>
+
+        <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 space-y-6">
+          <section class="rounded-3xl bg-gradient-to-br from-crimson-800 via-crimson-700 to-slate-900 p-6 text-white shadow-lg sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div class="max-w-2xl space-y-2">
+              <h1 class="text-2xl sm:text-3xl font-extrabold">${t.heroTitle}</h1>
+              <p class="text-sm text-crimson-100">${t.heroSub}</p>
+            </div>
+            <div class="grid grid-cols-3 gap-3 lg:w-96 shrink-0">
+              <div class="rounded-2xl bg-white/10 p-3.5 border border-white/15"><div class="text-2xl font-extrabold">${eligibleDonors}</div><div class="text-[11px] text-crimson-100">${t.available}</div></div>
+              <div class="rounded-2xl bg-white/10 p-3.5 border border-white/15"><div class="text-2xl font-extrabold">${activeReqs}</div><div class="text-[11px] text-crimson-100">${t.tabs.requests}</div></div>
+              <div class="rounded-2xl bg-white/10 p-3.5 border border-white/15"><div class="text-2xl font-extrabold">8</div><div class="text-[11px] text-crimson-100">Divisions</div></div>
+            </div>
+          </section>
+
+          ${state.tab === 'search' ? `
+            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+              <h2 class="text-xl font-extrabold">${t.searchTitle}</h2>
+              <div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                ${Object.keys(BLOOD_LABELS).map(bg => `
+                  <button onclick="setSearch('bloodGroup','${bg}')" class="rounded-xl border py-2 text-sm font-extrabold ${state.search.bloodGroup===bg?'bg-crimson-700 text-white border-crimson-700':'bg-slate-50 border-slate-200 hover:bg-crimson-50'}">${BLOOD_LABELS[bg]}</button>
+                `).join('')}
+              </div>
+              ${renderLocSelects({ div:state.search.divisionId, dist:state.search.districtId, upz:state.search.upazilaId, po:state.search.postOfficeId, vil:state.search.villageId }, 'setSearchLoc', true)}
+              <label class="flex items-center justify-between rounded-xl bg-crimson-50 border border-crimson-100 p-3 text-sm font-semibold">
+                <span>${t.compat}</span>
+                <input type="checkbox" ${state.search.compat?'checked':''} onchange="setSearch('compat',this.checked)" class="h-5 w-5 accent-crimson-700" />
+              </label>
+            </section>
+
+            <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${ranked.map(({ u, score, label }) => {
+                const isRevealed = !u.hidePhone || state.confirmedDonors.has(u.id);
+                const phone = isRevealed ? u.mobile : maskPhone(u.mobile);
+                return `
+                  <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-3">
+                          <span class="h-10 w-10 rounded-xl bg-crimson-700 text-white font-extrabold flex items-center justify-center">${BLOOD_LABELS[u.blood]}</span>
+                          <div>
+                            <h3 class="font-bold text-slate-900">${u.name}</h3>
+                            <span class="inline-block rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-800">${getBadge(u.donations)}</span>
+                          </div>
+                        </div>
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${score===1?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-slate-100 text-slate-700 border-slate-200'}">${label}</span>
+                      </div>
+                      <p class="mt-3 text-xs text-slate-600 bg-slate-50 rounded-xl p-2.5">${resolveLoc(u.div,u.dist,u.upz,u.po,u.vil)}</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                      ${isRevealed ? `
+                        <div class="grid grid-cols-2 gap-2">
+                          <a href="tel:${phone}" class="rounded-xl bg-crimson-700 py-2 text-center text-xs font-bold text-white">${t.call} (${phone})</a>
+                          <a href="https://wa.me/88${phone}" target="_blank" class="rounded-xl bg-emerald-600 py-2 text-center text-xs font-bold text-white">${t.wa}</a>
+                        </div>
+                      ` : `
+                        <div class="text-xs text-amber-800 bg-amber-50 rounded-xl px-3 py-2 mb-2 flex justify-between"><span>${t.masked}</span><strong class="font-mono">${phone}</strong></div>
+                        <button onclick="revealDonor('${u.id}')" class="w-full rounded-xl bg-crimson-700 py-2 text-xs font-bold text-white">${t.reveal}</button>
+                      `}
+                    </div>
+                  </article>
+                `;
+              }).join('')}
+            </section>
+          ` : ''}
+
+          ${state.tab === 'requests' ? `
+            <section class="space-y-4">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-extrabold">${t.reqTitle}</h2>
+                <button onclick="openReqModal()" class="rounded-xl bg-crimson-700 px-3.5 py-2 text-xs font-bold text-white">+ ${t.postBtn}</button>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${state.requests.map(r => {
+                  const hoursLeft = Math.ceil((new Date(r.expiresAt).getTime() - Date.now()) / 3600000);
+                  const expired = hoursLeft <= 0 && r.status !== 'FULFILLED';
+                  return `
+                    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between space-y-3">
+                      <div>
+                        <div class="flex items-center gap-3">
+                          <span class="h-10 w-10 rounded-xl bg-crimson-700 text-white font-extrabold flex items-center justify-center">${BLOOD_LABELS[r.blood]}</span>
+                          <div>
+                            <h3 class="font-bold text-slate-900">${r.patient}</h3>
+                            <span class="text-xs font-bold ${expired?'text-amber-700':'text-crimson-700'}">${expired?'EXPIRED (48h+)':r.status} · ${r.units} Bag(s)</span>
+                          </div>
+                        </div>
+                        <p class="mt-3 text-xs font-bold text-slate-900">${r.hospital}</p>
+                        <p class="text-xs text-slate-600">${r.ward}</p>
+                        <p class="mt-2 text-xs bg-slate-50 p-2 rounded-lg text-slate-700">${r.reason}</p>
+                      </div>
+                      <div class="space-y-2 pt-2 border-t border-slate-100">
+                        <div class="flex items-center justify-between text-xs">
+                          <span>${expired ? 'Expired (>48h)' : `Expires in ${hoursLeft}h`}</span>
+                          <button onclick="extendReq('${r.id}')" class="rounded-lg bg-amber-100 px-2 py-1 font-bold text-amber-900">${t.extend}</button>
+                        </div>
+                        <button onclick="openShare('${r.id}')" class="w-full rounded-xl border border-slate-300 py-2 text-xs font-bold hover:bg-slate-50">${t.share}</button>
+                      </div>
+                    </article>
+                  `;
+                }).join('')}
+              </div>
+            </section>
+          ` : ''}
+
+          ${state.tab === 'dashboard' ? (!cu ? `
+            <section class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-4">
+              <h2 class="text-xl font-extrabold text-slate-900">${t.dashTitle}</h2>
+              <p class="text-sm text-slate-500 max-w-md mx-auto">${t.notSignedIn}</p>
+              <button onclick="openAuthModal()" class="rounded-xl bg-crimson-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-crimson-800">${t.openAuth}</button>
+            </section>
+          ` : (() => {
+            const cd = evalCooldown(cu);
+            return `
+              <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div class="flex items-center gap-3">
+                    <span class="h-12 w-12 rounded-xl bg-crimson-700 text-white font-extrabold flex items-center justify-center text-lg">${BLOOD_LABELS[cu.blood]}</span>
+                    <div>
+                      <h2 class="text-xl font-extrabold">${cu.name}</h2>
+                      <p class="text-xs text-slate-500">${cu.mobile} · ${getBadge(cu.donations)} · ${cu.donations} Donations</p>
+                    </div>
+                  </div>
+                  <button onclick="signOutUser()" class="rounded-xl border border-slate-300 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100">${t.signOutBtn}</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p class="text-sm font-bold">${cd.onCooldown ? t.eligibleIn.replace('{d}', cd.daysLeft) : t.eligibleNow}</p>
+                    <div class="mt-2 h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                      <div class="h-full ${cd.onCooldown?'bg-amber-500':'bg-emerald-500'}" style="width:${cd.onCooldown?Math.round((cd.elapsed/90)*100):100}%"></div>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-600">Status: <strong>${cd.status}</strong></p>
+                  </div>
+                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between gap-2.5">
+                    <label class="flex items-center justify-between text-xs font-bold">
+                      <span>Donor Availability (${cd.onCooldown ? 'Locked during 90d Cooldown' : 'Active'})</span>
+                      <input type="checkbox" ${cu.manualAvailable && !cd.onCooldown?'checked':''} ${cd.onCooldown?'disabled':''} onchange="toggleAvail(this.checked)" class="h-4 w-4 accent-crimson-700" />
+                    </label>
+                    <label class="flex items-center justify-between text-xs font-bold">
+                      <span>Hide Phone Number (Privacy Mask)</span>
+                      <input type="checkbox" ${cu.hidePhone?'checked':''} onchange="togglePrivacy(this.checked)" class="h-4 w-4 accent-crimson-700" />
+                    </label>
+                    <button onclick="logTodayDonation()" class="rounded-xl bg-crimson-700 py-2 text-xs font-bold text-white">Log Today's Donation (+90d Cooldown)</button>
+                  </div>
+                </div>
+
+                <form onsubmit="saveProfile(event)" class="rounded-xl border border-slate-200 p-4 space-y-3">
+                  <h3 class="text-sm font-extrabold text-slate-900">Edit Unified Profile & 5-Tier Home Location</h3>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label class="text-xs font-semibold text-slate-600">Full Name</label>
+                      <input name="name" value="${cu.name}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label class="text-xs font-semibold text-slate-600">WhatsApp Number</label>
+                      <input name="whatsapp" value="${cu.whatsapp || cu.mobile}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label class="text-xs font-semibold text-slate-600">Blood Group</label>
+                      <select name="blood" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        ${Object.keys(BLOOD_LABELS).map(bg => `<option value="${bg}" ${cu.blood===bg?'selected':''}>${BLOOD_LABELS[bg]}</option>`).join('')}
+                      </select>
+                    </div>
+                  </div>
+                  ${renderLocSelects(cu, 'setProfileLoc', false)}
+                  <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800">Save Profile</button>
+                </form>
+              </section>
+            `;
+          })()) : ''}
+
+          ${state.tab === 'guidelines' ? `
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+              <h2 class="text-xl font-extrabold">${t.guideTitle}</h2>
+              <ul class="list-disc pl-5 space-y-2 text-sm text-slate-700">
+                <li>Age 18–60 years, minimum weight 50 kg, hemoglobin ≥ 12.5 g/dL.</li>
+                <li>Mandatory 90-day medical cooldown between whole-blood donations.</li>
+                <li>National Emergency: 999 · Health Helpline: 16263 · Red Crescent: +880 2-48312302</li>
+              </ul>
+            </section>
+          ` : ''}
+        </main>
+
+        <!-- Sign In / Create Account Modal with Password -->
+        ${state.showAuthModal ? `
+          <div class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4" onclick="closeAuthModal()">
+            <form onsubmit="submitPasswordAuth(event)" class="bg-white rounded-2xl max-w-xl w-full p-5 space-y-4 shadow-2xl" onclick="event.stopPropagation()">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h3 class="text-lg font-extrabold">${state.lang==='bn'?'সাইন ইন বা নতুন অ্যাকাউন্ট':'Sign In or Create Account'}</h3>
+                  <p class="text-xs text-slate-500">${state.lang==='bn'?'রক্তদান ও রক্তের আবেদনের জন্য একটি সমন্বিত অ্যাকাউন্ট।':'One unified account for donating & requesting blood.'}</p>
+                </div>
+                <button type="button" onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+              </div>
+              <div class="grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+                <button type="button" onclick="setAuthMode('login')" class="rounded-lg py-2 text-xs font-bold ${state.authMode==='login'?'bg-white text-slate-900 shadow-sm':'text-slate-600'}">${state.lang==='bn'?'সাইন ইন':'Sign In'}</button>
+                <button type="button" onclick="setAuthMode('register')" class="rounded-lg py-2 text-xs font-bold ${state.authMode==='register'?'bg-white text-slate-900 shadow-sm':'text-slate-600'}">${state.lang==='bn'?'নতুন অ্যাকাউন্ট':'Create Account'}</button>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'বাংলাদেশি মোবাইল নম্বর':'Bangladesh Mobile Number'} *</label>
+                <input value="${state.authMobile}" oninput="state.authMobile=this.value" required placeholder="017XXXXXXXX" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+              </div>
+              <div class="grid grid-cols-1 ${state.authMode==='register'?'sm:grid-cols-2':''} gap-3">
+                <div>
+                  <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'পাসওয়ার্ড':'Password'} *</label>
+                  <div class="relative">
+                    <input type="${state.authShowPass?'text':'password'}" value="${state.authPassword}" oninput="state.authPassword=this.value" required placeholder="${state.lang==='bn'?'কমপক্ষে ৬ অক্ষর':'Min 6 characters'}" class="w-full rounded-xl border border-slate-300 px-3 pr-14 py-2 text-sm" />
+                    <button type="button" onclick="toggleAuthPass()" class="absolute right-2.5 top-2 text-xs font-bold text-slate-500 hover:text-slate-800">${state.authShowPass?(state.lang==='bn'?'লুকান':'Hide'):(state.lang==='bn'?'দেখুন':'Show')}</button>
+                  </div>
+                </div>
+                ${state.authMode==='register' ? `
+                  <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'পাসওয়ার্ড নিশ্চিত করুন':'Confirm Password'} *</label>
+                    <input type="${state.authShowPass?'text':'password'}" value="${state.authConfirmPassword}" oninput="state.authConfirmPassword=this.value" required placeholder="${state.lang==='bn'?'পুনরায় লিখুন':'Re-enter password'}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                  </div>
+                ` : ''}
+              </div>
+              ${state.authMode==='register' ? `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'পূর্ণ নাম':'Full Name'} *</label>
+                    <input value="${state.authName}" oninput="state.authName=this.value" placeholder="e.g. Nusrat Jahan Mim" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'রক্তের গ্রুপ':'Blood Group'} *</label>
+                    <select onchange="state.authBlood=this.value" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                      ${Object.keys(BLOOD_LABELS).map(bg => `<option value="${bg}" ${state.authBlood===bg?'selected':''}>${BLOOD_LABELS[bg]}</option>`).join('')}
+                    </select>
+                  </div>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p class="mb-2 text-xs font-bold text-slate-700">${state.lang==='bn'?'৫-স্তরের স্থায়ী ঠিকানা':'5-Tier Home Location'}</p>
+                  ${renderLocSelects(state.authLoc, 'setAuthLoc', false)}
+                </div>
+              ` : ''}
+              ${state.authError ? `<p class="text-xs font-bold text-crimson-700">${state.authError}</p>` : ''}
+              <button type="submit" class="w-full rounded-xl bg-crimson-700 py-2.5 text-sm font-bold text-white hover:bg-crimson-800">${state.authMode==='login'?(state.lang==='bn'?'সাইন ইন করুন':'Sign In'):(state.lang==='bn'?'অ্যাকাউন্ট তৈরি করুন':'Create Account')}</button>
+            </form>
+          </div>
+        ` : ''}
+
+        ${state.shareReq ? `
+          <div class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4" onclick="closeShare()">
+            <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+              <div class="bg-crimson-700 text-white p-4 flex justify-between items-center">
+                <strong class="text-sm">URGENT BLOOD NEEDED (${BLOOD_LABELS[state.shareReq.blood]})</strong>
+                <button onclick="closeShare()" class="text-white/80 hover:text-white font-bold">✕</button>
+              </div>
+              <div class="p-4 space-y-2 text-xs">
+                <p class="text-base font-bold">${state.shareReq.patient}</p>
+                <p><strong>Hospital:</strong> ${state.shareReq.hospital} (${state.shareReq.ward})</p>
+                <p><strong>Contact:</strong> ${state.shareReq.contact} · ${state.shareReq.mobile}</p>
+                <a href="https://wa.me/?text=${encodeURIComponent('URGENT BLOOD NEEDED ('+BLOOD_LABELS[state.shareReq.blood]+') at '+state.shareReq.hospital+' Contact: '+state.shareReq.mobile)}" target="_blank" class="block text-center rounded-xl bg-emerald-600 text-white py-2.5 font-bold mt-3">Share on WhatsApp</a>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${state.showRequestModal ? `
+          <div class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4" onclick="closeReqModal()">
+            <form onsubmit="submitReq(event)" class="bg-white rounded-2xl max-w-lg w-full p-5 space-y-3 shadow-2xl" onclick="event.stopPropagation()">
+              <h3 class="text-lg font-extrabold">Post Emergency Blood Request</h3>
+              <input name="patient" required placeholder="Patient Name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+              <div class="grid grid-cols-2 gap-2">
+                <select name="blood" class="rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                  ${Object.keys(BLOOD_LABELS).map(bg => `<option value="${bg}">${BLOOD_LABELS[bg]}</option>`).join('')}
+                </select>
+                <input name="units" type="number" min="1" max="10" value="1" class="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+              </div>
+              <input name="hospital" required placeholder="Hospital Name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+              <input name="ward" required placeholder="Ward / Cabin / Bed No" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+              <input name="mobile" required placeholder="Primary Mobile (017XXXXXXXX)" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+              <input name="reason" required placeholder="Medical Reason" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+              <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeReqModal()" class="rounded-xl border px-4 py-2 text-xs font-bold">Cancel</button>
+                <button type="submit" class="rounded-xl bg-crimson-700 text-white px-4 py-2 text-xs font-bold">Publish (48h Active)</button>
+              </div>
+            </form>
+          </div>
+        ` : ''}
+
+        ${state.toast ? `
+          <div class="fixed bottom-4 right-4 z-50 rounded-xl bg-slate-900 text-white px-4 py-3 text-xs font-bold shadow-lg">${state.toast}</div>
+        ` : ''}
+      `;
+    }
+
+    window.setTab = (t) => { state.tab = t; render(); };
+    window.toggleLang = () => { state.lang = state.lang === 'en' ? 'bn' : 'en'; persist(); render(); };
+    window.setSearch = (k, v) => { state.search[k] = v; render(); };
+    window.setSearchLoc = (k, v) => {
+      const map = { div:'divisionId', dist:'districtId', upz:'upazilaId', po:'postOfficeId', vil:'villageId' };
+      state.search[map[k]] = v;
+      if (k === 'div') { state.search.districtId=''; state.search.upazilaId=''; state.search.postOfficeId=''; state.search.villageId=''; }
+      if (k === 'dist') { state.search.upazilaId=''; state.search.postOfficeId=''; state.search.villageId=''; }
+      if (k === 'upz') { state.search.postOfficeId=''; state.search.villageId=''; }
+      if (k === 'po') { state.search.villageId=''; }
+      render();
+    };
+    window.setProfileLoc = (k, v) => {
+      const cu = state.users.find(u => u.id === state.currentUserId);
+      if (!cu) return;
+      cu[k] = v;
+      if (k === 'div') { cu.dist=''; cu.upz=''; cu.po=''; cu.vil=''; }
+      if (k === 'dist') { cu.upz=''; cu.po=''; cu.vil=''; }
+      if (k === 'upz') { cu.po=''; cu.vil=''; }
+      if (k === 'po') { cu.vil=''; }
+      persist(); render();
+    };
+    window.setAuthLoc = (k, v) => {
+      state.authLoc[k] = v;
+      if (k === 'div') { state.authLoc.dist=''; state.authLoc.upz=''; state.authLoc.po=''; state.authLoc.vil=''; }
+      if (k === 'dist') { state.authLoc.upz=''; state.authLoc.po=''; state.authLoc.vil=''; }
+      if (k === 'upz') { state.authLoc.po=''; state.authLoc.vil=''; }
+      if (k === 'po') { state.authLoc.vil=''; }
+      render();
+    };
+    window.revealDonor = (id) => { state.confirmedDonors.add(id); render(); };
+    window.extendReq = (id) => {
+      const r = state.requests.find(x => x.id === id);
+      if (r) r.expiresAt = hoursFromNow(48);
+      persist(); render();
+    };
+    window.openShare = (id) => { state.shareReq = state.requests.find(x => x.id === id); render(); };
+    window.closeShare = () => { state.shareReq = null; render(); };
+    window.openReqModal = () => { state.showRequestModal = true; render(); };
+    window.closeReqModal = () => { state.showRequestModal = false; render(); };
+    window.openAuthModal = () => { state.showAuthModal = true; state.authError=''; render(); };
+    window.closeAuthModal = () => { state.showAuthModal = false; render(); };
+    window.setAuthMode = (m) => { state.authMode = m; state.authError=''; render(); };
+    window.toggleAuthPass = () => { state.authShowPass = !state.authShowPass; render(); };
+    window.signOutUser = () => { state.currentUserId = null; persist(); notify('Signed out.'); };
+    window.submitPasswordAuth = (e) => {
+      e.preventDefault();
+      if (!/^(?:\+?88)?01[3-9]\d{8}$/.test(state.authMobile.trim())) {
+        state.authError = state.lang==='bn' ? 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন (যেমন 017XXXXXXXX)' : 'Enter a valid BD mobile number (e.g. 017XXXXXXXX)';
+        render(); return;
+      }
+      if (!state.authPassword || state.authPassword.length < 6) {
+        state.authError = state.lang==='bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' : 'Password must be at least 6 characters.';
+        render(); return;
+      }
+      const m = state.authMobile.trim().replace(/^\+?88/, '');
+      const existing = state.users.find(u => u.mobile === m);
+      if (state.authMode === 'login') {
+        if (!existing || state.credentials[m] !== state.authPassword) {
+          state.authError = state.lang==='bn' ? 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়।' : 'Incorrect mobile number or password.';
+          render(); return;
+        }
+        state.currentUserId = existing.id;
+        state.showAuthModal = false; state.authPassword = ''; state.authError = '';
+        state.tab = 'dashboard'; persist();
+        notify(state.lang==='bn' ? 'সফলভাবে সাইন ইন হয়েছে!' : 'Signed in successfully!');
+        return;
+      }
+
+      if (existing) {
+        state.authError = state.lang==='bn' ? 'এই নম্বরে ইতিমধ্যে অ্যাকাউন্ট আছে। অনুগ্রহ করে সাইন ইন করুন।' : 'An account with this mobile already exists. Please Sign In.';
+        render(); return;
+      }
+      if (!state.authName.trim()) {
+        state.authError = state.lang==='bn' ? 'আপনার পূর্ণ নাম লিখুন।' : 'Please enter your Full Name.';
+        render(); return;
+      }
+      if (state.authPassword !== state.authConfirmPassword) {
+        state.authError = state.lang==='bn' ? 'পাসওয়ার্ড দুটি মেলেনি।' : 'Passwords do not match.';
+        render(); return;
+      }
+      const created = {
+        id:'usr-'+Date.now(), name: state.authName.trim(), mobile:m, whatsapp:m,
+        blood: state.authBlood, div: state.authLoc.div || 'div-dhaka',
+        dist: state.authLoc.dist || 'dist-dhaka', upz: state.authLoc.upz || 'upz-dhanmondi',
+        po: state.authLoc.po || 'po-dhanmondi-1205', vil: state.authLoc.vil || 'vil-kalabagan',
+        manualAvailable:true, hidePhone:false, lastDonation:null, donations:0
+      };
+      state.credentials[m] = state.authPassword;
+      state.users.unshift(created);
+      state.currentUserId = created.id;
+      state.showAuthModal = false; state.authPassword = ''; state.authConfirmPassword = ''; state.authError = '';
+      state.tab = 'dashboard'; persist();
+      notify(state.lang==='bn' ? 'অ্যাকাউন্ট তৈরি ও সাইন ইন সম্পন্ন!' : 'Account created and signed in!');
+    };
+    window.submitReq = (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      state.requests.unshift({
+        id:'req-'+Date.now(), requesterId:state.currentUserId || 'usr-guest',
+        patient:fd.get('patient'), blood:fd.get('blood'), units:Number(fd.get('units')),
+        urgency:'EMERGENCY', hospital:fd.get('hospital'), ward:fd.get('ward'),
+        contact:'Attendant', mobile:fd.get('mobile'), reason:fd.get('reason'),
+        status:'ACTIVE', expiresAt:hoursFromNow(48)
+      });
+      state.showRequestModal = false;
+      state.tab = 'requests';
+      persist();
+      notify('Emergency blood request published (48h active).');
+    };
+    window.toggleAvail = (val) => { const cu = state.users.find(u => u.id === state.currentUserId); if (cu) cu.manualAvailable = val; persist(); notify('Availability updated.'); };
+    window.togglePrivacy = (val) => { const cu = state.users.find(u => u.id === state.currentUserId); if (cu) cu.hidePhone = val; persist(); notify('Privacy setting updated.'); };
+    window.logTodayDonation = () => { const cu = state.users.find(u => u.id === state.currentUserId); if (cu) { cu.lastDonation = new Date().toISOString(); cu.donations += 1; } persist(); notify('Donation logged & 90-day cooldown started.'); };
+    window.saveProfile = (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const cu = state.users.find(u => u.id === state.currentUserId);
+      if (cu) { cu.name = fd.get('name'); cu.whatsapp = fd.get('whatsapp'); cu.blood = fd.get('blood'); }
+      persist();
+      notify('Profile & 5-tier location saved!');
+    };
+
+    render();
+  </script>
+</body>
+</html>

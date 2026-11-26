@@ -30,12 +30,14 @@ interface AppStateContextValue {
   matches: EmergencyMatchRecord[];
   confirmedDonorIdsForCurrentUser: Set<string>;
   signInWithUser: (userId: string) => void;
-  registerOrLoginByMobile: (payload: {
+  loginWithPassword: (mobileNumber: string, password: string) => { ok: boolean; error?: 'INVALID_CREDENTIALS' };
+  registerWithPassword: (payload: {
     mobileNumber: string;
-    fullName?: string;
-    bloodGroup?: BloodGroupCode;
-    location?: LocationSelection;
-  }) => UserProfile;
+    password: string;
+    fullName: string;
+    bloodGroup: BloodGroupCode;
+    location: LocationSelection;
+  }) => { ok: boolean; user?: UserProfile; error?: 'ALREADY_EXISTS' };
   signOut: () => void;
   updateCurrentUserProfile: (patch: {
     fullName?: string;
@@ -75,6 +77,7 @@ const STORAGE_KEY = 'roktobondhu_bd_state_v1';
 
 interface PersistedShape {
   users: UserProfile[];
+  credentials: Record<string, string>;
   currentUserId: string | null;
   requests: BloodRequestItem[];
   matches: EmergencyMatchRecord[];
@@ -82,7 +85,8 @@ interface PersistedShape {
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<UserProfile[]>(INITIAL_DEMO_USERS);
-  const [currentUserId, setCurrentUserId] = useState<string | null>('usr-tanvir');
+  const [credentials, setCredentials] = useState<Record<string, string>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [requests, setRequests] = useState<BloodRequestItem[]>(INITIAL_DEMO_REQUESTS);
   const [matches, setMatches] = useState<EmergencyMatchRecord[]>(INITIAL_DEMO_MATCHES);
 
@@ -93,6 +97,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(raw) as PersistedShape;
         if (Array.isArray(parsed.users) && parsed.users.length > 0) {
           setUsers(parsed.users);
+          setCredentials(parsed.credentials ?? {});
           setCurrentUserId(parsed.currentUserId);
           setRequests(parsed.requests ?? INITIAL_DEMO_REQUESTS);
           setMatches(parsed.matches ?? INITIAL_DEMO_MATCHES);
@@ -105,12 +110,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const payload: PersistedShape = { users, currentUserId, requests, matches };
+      const payload: PersistedShape = { users, credentials, currentUserId, requests, matches };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch {
       // Ignore storage quota issues
     }
-  }, [users, currentUserId, requests, matches]);
+  }, [users, credentials, currentUserId, requests, matches]);
 
   const normalizedUsers = useMemo(
     () =>
@@ -161,39 +166,55 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setCurrentUserId(userId);
   };
 
-  const registerOrLoginByMobile = (payload: {
-    mobileNumber: string;
-    fullName?: string;
-    bloodGroup?: BloodGroupCode;
-    location?: LocationSelection;
-  }): UserProfile => {
-    const mobile = normalizeBangladeshMobile(payload.mobileNumber);
+  const loginWithPassword = (
+    mobileNumber: string,
+    password: string
+  ): { ok: boolean; error?: 'INVALID_CREDENTIALS' } => {
+    const mobile = normalizeBangladeshMobile(mobileNumber);
     const existing = normalizedUsers.find((u) => u.mobileNumber === mobile);
-    if (existing) {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === existing.id
-            ? { ...u, isMobileVerified: true, lastActiveAt: new Date().toISOString() }
-            : u
-        )
-      );
-      setCurrentUserId(existing.id);
-      return existing;
+    if (!existing) {
+      return { ok: false, error: 'INVALID_CREDENTIALS' };
+    }
+
+    const savedPassword = credentials[mobile];
+    if (!savedPassword || savedPassword !== password) {
+      return { ok: false, error: 'INVALID_CREDENTIALS' };
+    }
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === existing.id ? { ...u, lastActiveAt: new Date().toISOString() } : u
+      )
+    );
+    setCurrentUserId(existing.id);
+    return { ok: true };
+  };
+
+  const registerWithPassword = (payload: {
+    mobileNumber: string;
+    password: string;
+    fullName: string;
+    bloodGroup: BloodGroupCode;
+    location: LocationSelection;
+  }): { ok: boolean; user?: UserProfile; error?: 'ALREADY_EXISTS' } => {
+    const mobile = normalizeBangladeshMobile(payload.mobileNumber);
+    if (normalizedUsers.some((u) => u.mobileNumber === mobile)) {
+      return { ok: false, error: 'ALREADY_EXISTS' };
     }
 
     const nowIso = new Date().toISOString();
     const created: UserProfile = {
       id: `usr-${Date.now()}`,
-      fullName: payload.fullName?.trim() || 'RoktoBondhu Member',
+      fullName: payload.fullName.trim(),
       mobileNumber: mobile,
       isMobileVerified: true,
       whatsappNumber: mobile,
-      bloodGroup: payload.bloodGroup ?? 'O_POS',
-      divisionId: payload.location?.divisionId || 'div-dhaka',
-      districtId: payload.location?.districtId || 'dist-dhaka',
-      upazilaId: payload.location?.upazilaId || 'upz-dhanmondi',
-      postOfficeId: payload.location?.postOfficeId || 'po-dhanmondi-1205',
-      villageId: payload.location?.villageId || 'vil-kalabagan',
+      bloodGroup: payload.bloodGroup,
+      divisionId: payload.location.divisionId || 'div-dhaka',
+      districtId: payload.location.districtId || 'dist-dhaka',
+      upazilaId: payload.location.upazilaId || 'upz-dhanmondi',
+      postOfficeId: payload.location.postOfficeId || 'po-dhanmondi-1205',
+      villageId: payload.location.villageId || 'vil-kalabagan',
       manualAvailable: true,
       availabilityStatus: 'AVAILABLE',
       lastDonationDate: null,
@@ -204,9 +225,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       createdAt: nowIso,
     };
 
+    setCredentials((prev) => ({ ...prev, [mobile]: payload.password }));
     setUsers((prev) => [created, ...prev]);
     setCurrentUserId(created.id);
-    return created;
+    return { ok: true, user: created };
   };
 
   const signOut = () => {
@@ -443,7 +465,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         matches,
         confirmedDonorIdsForCurrentUser,
         signInWithUser,
-        registerOrLoginByMobile,
+        loginWithPassword,
+        registerWithPassword,
         signOut,
         updateCurrentUserProfile,
         logExternalDonation,

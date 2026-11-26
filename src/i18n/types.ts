@@ -204,17 +204,22 @@ export interface Dictionary {
   auth: {
     modalTitle: string;
     modalSubtitle: string;
-    quickDemoLabel: string;
+    signInTab: string;
+    registerTab: string;
     mobileLabel: string;
     mobilePlaceholder: string;
-    sendOtpBtn: string;
-    otpSentBanner: string;
-    otpLabel: string;
-    otpPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    confirmPasswordLabel: string;
+    confirmPasswordPlaceholder: string;
     fullNameLabel: string;
     fullNamePlaceholder: string;
-    verifyLoginBtn: string;
-    resendOtp: string;
+    signInSubmitBtn: string;
+    registerSubmitBtn: string;
+    invalidCredentials: string;
+    accountAlreadyExists: string;
+    passwordTooShort: string;
+    passwordsDoNotMatch: string;
   };
   guidelines: {
     title: string;
