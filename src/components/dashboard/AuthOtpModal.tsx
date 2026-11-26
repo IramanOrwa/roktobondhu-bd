@@ -1,14 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowRight, Eye, EyeOff, Lock, Smartphone, User } from 'lucide-react';
+import { ArrowRight, Calendar, Eye, EyeOff, Lock, Smartphone, User } from 'lucide-react';
 import { CascadingLocationSelect } from '@/components/location/CascadingLocationSelect';
 import { Modal } from '@/components/ui/Modal';
 import { useAppState } from '@/context/AppStateContext';
 import { useToast } from '@/context/ToastContext';
 import { useTranslation } from '@/i18n/context';
 import { BLOOD_GROUP_CODES, BLOOD_GROUP_LABELS } from '@/lib/donor-ranking';
-import { isValidBangladeshMobile, normalizeBangladeshMobile } from '@/lib/validation';
+import {
+  isEligibleDonorAge,
+  isValidBangladeshMobile,
+  normalizeBangladeshMobile,
+} from '@/lib/validation';
 import type { BloodGroupCode, LocationSelection } from '@/types';
 
 interface AuthOtpModalProps {
@@ -35,6 +39,7 @@ export function AuthOtpModal({ isOpen, onClose }: AuthOtpModalProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [bloodGroup, setBloodGroup] = useState<BloodGroupCode>('O_POS');
   const [location, setLocation] = useState<LocationSelection>(BLANK_LOCATION);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +49,9 @@ export function AuthOtpModal({ isOpen, onClose }: AuthOtpModalProps) {
     normalized && users.some((u) => u.mobileNumber === normalized)
   );
 
-  // Automatically reveal either Sign In (existing) or Create Account (new) once valid 11-digit mobile is entered or Continue clicked
-  const isMobileChecked = Boolean(normalized) && (accountExists || checkedMobile === normalized || normalized.length === 11);
+  const isMobileChecked =
+    Boolean(normalized) &&
+    (accountExists || checkedMobile === normalized || normalized.length === 11);
   const effectiveMode: 'idle' | 'login' | 'register' = !isMobileChecked
     ? 'idle'
     : accountExists
@@ -95,6 +101,10 @@ export function AuthOtpModal({ isOpen, onClose }: AuthOtpModalProps) {
       setError(t.validation.requiredField);
       return;
     }
+    if (!dateOfBirth || !isEligibleDonorAge(dateOfBirth)) {
+      setError(t.auth.invalidAgeError);
+      return;
+    }
     if (password.length < 6) {
       setError(t.auth.passwordTooShort);
       return;
@@ -112,6 +122,7 @@ export function AuthOtpModal({ isOpen, onClose }: AuthOtpModalProps) {
       mobileNumber: mobile,
       password,
       fullName,
+      dateOfBirth,
       bloodGroup,
       location,
     });
@@ -124,6 +135,7 @@ export function AuthOtpModal({ isOpen, onClose }: AuthOtpModalProps) {
     setError(null);
     setPassword('');
     setConfirmPassword('');
+    setDateOfBirth('');
     setLocation(BLANK_LOCATION);
     setCheckedMobile(null);
     onClose();
@@ -226,7 +238,7 @@ export function AuthOtpModal({ isOpen, onClose }: AuthOtpModalProps) {
 
         {effectiveMode === 'register' && (
           <>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-700">
                   {t.auth.fullNameLabel} *
@@ -239,6 +251,21 @@ export function AuthOtpModal({ isOpen, onClose }: AuthOtpModalProps) {
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder={t.auth.fullNamePlaceholder}
                     className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-sm focus:border-crimson-600 focus:outline-none focus:ring-2 focus:ring-crimson-100"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-700">
+                  {t.auth.dateOfBirthLabel} *
+                </label>
+                <div className="relative">
+                  <Calendar className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <input
+                    type="date"
+                    max={new Date().toISOString().split('T')[0]}
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 pl-9 pr-2 py-2 text-sm focus:border-crimson-600 focus:outline-none focus:ring-2 focus:ring-crimson-100"
                   />
                 </div>
               </div>

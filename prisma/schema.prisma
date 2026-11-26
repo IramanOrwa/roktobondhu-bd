@@ -66,6 +66,7 @@ model User {
   fullName            String
   mobileNumber        String            @unique
   passwordHash        String?
+  dateOfBirth         DateTime?
   isMobileVerified    Boolean           @default(false)
   otpCodeHash         String?
   otpExpiresAt        DateTime?

@@ -34,6 +34,7 @@ export interface UserProfile {
   id: string;
   fullName: string;
   mobileNumber: string;
+  dateOfBirth?: string | null;
   isMobileVerified: boolean;
   secondaryPhone?: string | null;
   whatsappNumber?: string | null;

@@ -46,6 +46,7 @@ export function UnifiedDashboard({ onOpenAuthModal }: UnifiedDashboardProps) {
   const { showToast } = useToast();
 
   const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [bloodGroup, setBloodGroup] = useState<BloodGroupCode>('O_POS');
   const [location, setLocation] = useState<LocationSelection>({
@@ -64,6 +65,7 @@ export function UnifiedDashboard({ onOpenAuthModal }: UnifiedDashboardProps) {
   useEffect(() => {
     if (!currentUser) return;
     setFullName(currentUser.fullName);
+    setDateOfBirth(currentUser.dateOfBirth || '');
     setWhatsappNumber(currentUser.whatsappNumber || currentUser.mobileNumber);
     setBloodGroup(currentUser.bloodGroup);
     setLocation({
@@ -110,6 +112,7 @@ export function UnifiedDashboard({ onOpenAuthModal }: UnifiedDashboardProps) {
     e.preventDefault();
     updateCurrentUserProfile({
       fullName,
+      dateOfBirth: dateOfBirth || undefined,
       whatsappNumber,
       bloodGroup,
       location,
@@ -312,7 +315,7 @@ export function UnifiedDashboard({ onOpenAuthModal }: UnifiedDashboardProps) {
         </div>
 
         <form onSubmit={handleSaveProfile} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700">
                 {t.dashboard.fullName}
@@ -321,6 +324,18 @@ export function UnifiedDashboard({ onOpenAuthModal }: UnifiedDashboardProps) {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700">
+                {t.auth.dateOfBirthLabel}
+              </label>
+              <input
+                type="date"
+                max={new Date().toISOString().split('T')[0]}
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
               />
             </div>

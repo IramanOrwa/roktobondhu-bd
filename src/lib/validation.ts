@@ -20,3 +20,19 @@ export function isFutureDate(dateStr: string): boolean {
   if (Number.isNaN(parsed.getTime())) return false;
   return parsed.getTime() > Date.now();
 }
+
+export function calculateAgeYears(dobStr: string, refDate: Date = new Date()): number | null {
+  const dob = new Date(dobStr);
+  if (Number.isNaN(dob.getTime())) return null;
+  let age = refDate.getFullYear() - dob.getFullYear();
+  const monthDiff = refDate.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && refDate.getDate() < dob.getDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
+export function isEligibleDonorAge(dobStr: string): boolean {
+  const age = calculateAgeYears(dobStr);
+  return age !== null && age >= 18 && age <= 65;
+}

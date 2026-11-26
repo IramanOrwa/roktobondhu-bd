@@ -226,6 +226,8 @@ export const enDictionary: Dictionary = {
     confirmPasswordPlaceholder: 'Re-enter password',
     fullNameLabel: 'Full Name',
     fullNamePlaceholder: 'e.g. Nusrat Jahan Mim',
+    dateOfBirthLabel: 'Date of Birth',
+    invalidAgeError: 'Age must be between 18 and 65 years to register.',
     addressLabel: 'Address',
     signInSubmitBtn: 'Sign In',
     registerSubmitBtn: 'Create Account',

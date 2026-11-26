@@ -94,6 +94,7 @@
       authConfirmPassword: '',
       authShowPass: false,
       authName: '',
+      authDob: '',
       authBlood: 'O_POS',
       authLoc: { div:'', dist:'', upz:'', po:'', vil:'' },
       authError: '',
@@ -427,11 +428,15 @@
                 </div>
 
                 <form onsubmit="saveProfile(event)" class="rounded-xl border border-slate-200 p-4 space-y-3">
-                  <h3 class="text-sm font-extrabold text-slate-900">Edit Unified Profile & 5-Tier Home Location</h3>
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <h3 class="text-sm font-extrabold text-slate-900">Edit Unified Profile & Address</h3>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
                       <label class="text-xs font-semibold text-slate-600">Full Name</label>
                       <input name="name" value="${cu.name}" required class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label class="text-xs font-semibold text-slate-600">Date of Birth</label>
+                      <input name="dob" type="date" max="${new Date().toISOString().split('T')[0]}" value="${cu.dob || ''}" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                     </div>
                     <div>
                       <label class="text-xs font-semibold text-slate-600">WhatsApp Number</label>
@@ -504,10 +509,14 @@
                 </div>
               ` : ''}
               ${effectiveAuthMode==='register' ? `
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'পূর্ণ নাম':'Full Name'} *</label>
                     <input value="${state.authName}" oninput="state.authName=this.value" placeholder="e.g. Nusrat Jahan Mim" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'জন্ম তারিখ':'Date of Birth'} *</label>
+                    <input type="date" max="${new Date().toISOString().split('T')[0]}" value="${state.authDob}" oninput="state.authDob=this.value" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                   </div>
                   <div>
                     <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'রক্তের গ্রুপ':'Blood Group'} *</label>
@@ -667,6 +676,19 @@
         state.authError = state.lang==='bn' ? 'আপনার পূর্ণ নাম লিখুন।' : 'Please enter your Full Name.';
         render(); return;
       }
+      if (!state.authDob) {
+        state.authError = state.lang==='bn' ? 'আপনার জন্ম তারিখ নির্বাচন করুন।' : 'Please select your Date of Birth.';
+        render(); return;
+      }
+      const dobDate = new Date(state.authDob);
+      const today = new Date();
+      let age = today.getFullYear() - dobDate.getFullYear();
+      const md = today.getMonth() - dobDate.getMonth();
+      if (md < 0 || (md === 0 && today.getDate() < dobDate.getDate())) age--;
+      if (Number.isNaN(age) || age < 18 || age > 65) {
+        state.authError = state.lang==='bn' ? 'নিবন্ধনের জন্য বয়স ১৮ থেকে ৬৫ বছরের মধ্যে হতে হবে।' : 'Age must be between 18 and 65 years to register.';
+        render(); return;
+      }
       if (!state.authPassword || state.authPassword.length < 6) {
         state.authError = state.lang==='bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' : 'Password must be at least 6 characters.';
         render(); return;
@@ -680,7 +702,7 @@
         render(); return;
       }
       const created = {
-        id:'usr-'+Date.now(), name: state.authName.trim(), mobile:m, whatsapp:m,
+        id:'usr-'+Date.now(), name: state.authName.trim(), dob: state.authDob, mobile:m, whatsapp:m,
         blood: state.authBlood, div: state.authLoc.div,
         dist: state.authLoc.dist, upz: state.authLoc.upz,
         po: state.authLoc.po, vil: state.authLoc.vil,
@@ -689,7 +711,7 @@
       state.credentials[m] = state.authPassword;
       state.users.unshift(created);
       state.currentUserId = created.id;
-      state.showAuthModal = false; state.authPassword = ''; state.authConfirmPassword = '';
+      state.showAuthModal = false; state.authPassword = ''; state.authConfirmPassword = ''; state.authDob = '';
       state.authLoc = { div:'', dist:'', upz:'', po:'', vil:'' };
       state.authCheckedMobile = null; state.authError = '';
       state.tab = 'dashboard'; persist();
@@ -717,7 +739,7 @@
       e.preventDefault();
       const fd = new FormData(e.target);
       const cu = state.users.find(u => u.id === state.currentUserId);
-      if (cu) { cu.name = fd.get('name'); cu.whatsapp = fd.get('whatsapp'); cu.blood = fd.get('blood'); }
+      if (cu) { cu.name = fd.get('name'); cu.dob = fd.get('dob') || cu.dob; cu.whatsapp = fd.get('whatsapp'); cu.blood = fd.get('blood'); }
       persist();
       notify('Profile & 5-tier location saved!');
     };

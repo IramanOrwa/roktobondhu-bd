@@ -225,6 +225,8 @@ export const bnDictionary: Dictionary = {
     confirmPasswordPlaceholder: 'পুনরায় পাসওয়ার্ড লিখুন',
     fullNameLabel: 'পূর্ণ নাম',
     fullNamePlaceholder: 'যেমন: নুসরাত জাহান মিম',
+    dateOfBirthLabel: 'জন্ম তারিখ (Date of Birth)',
+    invalidAgeError: 'নিবন্ধনের জন্য বয়স ১৮ থেকে ৬৫ বছরের মধ্যে হতে হবে।',
     addressLabel: 'ঠিকানা (Address)',
     signInSubmitBtn: 'সাইন ইন করুন',
     registerSubmitBtn: 'অ্যাকাউন্ট তৈরি করুন',

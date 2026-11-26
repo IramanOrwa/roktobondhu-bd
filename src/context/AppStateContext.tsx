@@ -35,12 +35,14 @@ interface AppStateContextValue {
     mobileNumber: string;
     password: string;
     fullName: string;
+    dateOfBirth: string;
     bloodGroup: BloodGroupCode;
     location: LocationSelection;
   }) => { ok: boolean; user?: UserProfile; error?: 'ALREADY_EXISTS' };
   signOut: () => void;
   updateCurrentUserProfile: (patch: {
     fullName?: string;
+    dateOfBirth?: string;
     whatsappNumber?: string;
     bloodGroup?: BloodGroupCode;
     location?: LocationSelection;
@@ -194,6 +196,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     mobileNumber: string;
     password: string;
     fullName: string;
+    dateOfBirth: string;
     bloodGroup: BloodGroupCode;
     location: LocationSelection;
   }): { ok: boolean; user?: UserProfile; error?: 'ALREADY_EXISTS' } => {
@@ -207,6 +210,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       id: `usr-${Date.now()}`,
       fullName: payload.fullName.trim(),
       mobileNumber: mobile,
+      dateOfBirth: payload.dateOfBirth,
       isMobileVerified: true,
       whatsappNumber: mobile,
       bloodGroup: payload.bloodGroup,
@@ -237,6 +241,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   const updateCurrentUserProfile = (patch: {
     fullName?: string;
+    dateOfBirth?: string;
     whatsappNumber?: string;
     bloodGroup?: BloodGroupCode;
     location?: LocationSelection;
@@ -253,6 +258,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         return {
           ...u,
           fullName: patch.fullName?.trim() || u.fullName,
+          dateOfBirth: patch.dateOfBirth !== undefined ? patch.dateOfBirth : u.dateOfBirth,
           whatsappNumber:
             patch.whatsappNumber !== undefined ? patch.whatsappNumber.trim() : u.whatsappNumber,
           bloodGroup: patch.bloodGroup ?? u.bloodGroup,

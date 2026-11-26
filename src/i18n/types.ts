@@ -215,6 +215,8 @@ export interface Dictionary {
     confirmPasswordPlaceholder: string;
     fullNameLabel: string;
     fullNamePlaceholder: string;
+    dateOfBirthLabel: string;
+    invalidAgeError: string;
     addressLabel: string;
     signInSubmitBtn: string;
     registerSubmitBtn: string;

@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { isValidBangladeshMobile, normalizeBangladeshMobile } from '@/lib/validation';
+import { isEligibleDonorAge, isValidBangladeshMobile, normalizeBangladeshMobile } from '@/lib/validation';
 import type { BloodGroupCode } from '@/types';
 
 function hashPassword(password: string): string {
@@ -22,11 +22,12 @@ function verifyPassword(password: string, storedHash: string): boolean {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, mobileNumber, password, fullName, bloodGroup, location } = body as {
+    const { action, mobileNumber, password, fullName, dateOfBirth, bloodGroup, location } = body as {
       action: 'login' | 'register';
       mobileNumber: string;
       password: string;
       fullName?: string;
+      dateOfBirth?: string;
       bloodGroup?: BloodGroupCode;
       location?: {
         divisionId: string;
@@ -87,20 +88,27 @@ export async function POST(req: NextRequest) {
       if (!fullName?.trim()) {
         return NextResponse.json({ error: 'Full name is required.' }, { status: 400 });
       }
+      if (!dateOfBirth || !isEligibleDonorAge(dateOfBirth)) {
+        return NextResponse.json(
+          { error: 'Valid Date of Birth is required (age must be between 18 and 65).' },
+          { status: 400 }
+        );
+      }
 
       const created = await prisma.user.create({
         data: {
           fullName: fullName.trim(),
           mobileNumber: normalizedMobile,
           whatsappNumber: normalizedMobile,
+          dateOfBirth: new Date(dateOfBirth),
           passwordHash: hashPassword(password),
           isMobileVerified: true,
           bloodGroup: bloodGroup ?? 'O_POS',
-          divisionId: location?.divisionId ?? 'div-dhaka',
-          districtId: location?.districtId ?? 'dist-dhaka',
-          upazilaId: location?.upazilaId ?? 'upz-dhanmondi',
-          postOfficeId: location?.postOfficeId ?? 'po-dhanmondi-1205',
-          villageId: location?.villageId ?? 'vil-kalabagan',
+          divisionId: location?.divisionId ?? 'div-6',
+          districtId: location?.districtId ?? 'dist-47',
+          upazilaId: location?.upazilaId ?? 'upz-m7',
+          postOfficeId: location?.postOfficeId ?? 'po-9',
+          villageId: location?.villageId ?? 'po-9-area',
           manualAvailable: true,
           availabilityStatus: 'AVAILABLE',
           totalDonations: 0,
