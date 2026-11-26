@@ -43,13 +43,7 @@ export function DonorSearchSection({
 
   const [bloodGroup, setBloodGroup] = useState<BloodGroupCode>('O_POS');
   const [includeCompatible, setIncludeCompatible] = useState<boolean>(true);
-  const [location, setLocation] = useState<LocationSelection>({
-    divisionId: 'div-dhaka',
-    districtId: 'dist-dhaka',
-    upazilaId: '',
-    postOfficeId: '',
-    villageId: '',
-  });
+  const [location, setLocation] = useState<LocationSelection>(EMPTY_LOCATION);
 
   const rankedDonors = useMemo(
     () =>

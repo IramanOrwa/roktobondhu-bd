@@ -208,14 +208,18 @@ export interface Dictionary {
     registerTab: string;
     mobileLabel: string;
     mobilePlaceholder: string;
+    continueBtn: string;
     passwordLabel: string;
     passwordPlaceholder: string;
     confirmPasswordLabel: string;
     confirmPasswordPlaceholder: string;
     fullNameLabel: string;
     fullNamePlaceholder: string;
+    addressLabel: string;
     signInSubmitBtn: string;
     registerSubmitBtn: string;
+    noAccountFound: string;
+    goToCreateAccount: string;
     invalidCredentials: string;
     accountAlreadyExists: string;
     passwordTooShort: string;

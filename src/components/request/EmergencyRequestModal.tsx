@@ -32,10 +32,10 @@ export function EmergencyRequestModal({
   const [hospitalName, setHospitalName] = useState('');
   const [wardCabinBed, setWardCabinBed] = useState('');
   const [location, setLocation] = useState<LocationSelection>({
-    divisionId: currentUser?.divisionId || 'div-dhaka',
-    districtId: currentUser?.districtId || 'dist-dhaka',
-    upazilaId: currentUser?.upazilaId || 'upz-shahbagh',
-    postOfficeId: currentUser?.postOfficeId || '',
+    divisionId: '',
+    districtId: '',
+    upazilaId: '',
+    postOfficeId: '',
     villageId: '',
   });
   const [villageOrArea, setVillageOrArea] = useState('');

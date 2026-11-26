@@ -176,18 +176,19 @@
       tab: 'search',
       currentUserId: null,
       confirmedDonors: new Set(),
-      search: { bloodGroup:'O_POS', compat:true, divisionId:'div-dhaka', districtId:'dist-dhaka', upazilaId:'', postOfficeId:'', villageId:'' },
+      search: { bloodGroup:'O_POS', compat:true, divisionId:'', districtId:'', upazilaId:'', postOfficeId:'', villageId:'' },
       shareReq: null,
       showRequestModal: false,
       showAuthModal: false,
       authMode: 'login',
       authMobile: '',
+      authCheckedMobile: null,
       authPassword: '',
       authConfirmPassword: '',
       authShowPass: false,
       authName: '',
       authBlood: 'O_POS',
-      authLoc: { div:'div-dhaka', dist:'dist-dhaka', upz:'upz-dhanmondi', po:'po-dhanmondi-1205', vil:'vil-kalabagan' },
+      authLoc: { div:'', dist:'', upz:'', po:'', vil:'' },
       authError: '',
       credentials: {},
       toast: null,
@@ -273,7 +274,7 @@
       const selPo = pos.find(p => p.id === locObj.po);
       const vils = selPo ? selPo.villages : [];
       return `
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 ${allowAll ? 'lg:grid-cols-5' : 'lg:grid-cols-3'} gap-2.5">
           <select onchange="${onChangeFn}('div',this.value)" class="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white">
             <option value="">${allowAll ? 'All Divisions' : 'Division'}</option>
             ${LOCATIONS.map(d => `<option value="${d.id}" ${locObj.div===d.id?'selected':''}>${d[l]}</option>`).join('')}
@@ -318,8 +319,11 @@
       const activeReqs = state.requests.filter(r => r.status === 'ACTIVE' || r.status === 'IN_PROGRESS').length;
       const eligibleDonors = state.users.filter(u => evalCooldown(u).status === 'AVAILABLE').length;
 
-      const normalizedInput = state.authMobile.trim().replace(/^\+?88/, '');
-      const existingMatch = /^(01[3-9]\d{8})$/.test(normalizedInput) && state.users.some(u => u.mobile === normalizedInput);
+      const normAuth = state.authMobile.trim().replace(/^\+?88/, '');
+      const isAuthValidMobile = /^(01[3-9]\d{8})$/.test(normAuth);
+      const authAccountExists = isAuthValidMobile && state.users.some(u => u.mobile === normAuth);
+      const showLoginPassword = state.authMode === 'login' && authAccountExists;
+      const showMissingNotice = state.authMode === 'login' && state.authCheckedMobile === normAuth && isAuthValidMobile && !authAccountExists;
 
       document.getElementById('app').innerHTML = `
         <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -538,10 +542,10 @@
           ` : ''}
         </main>
 
-        <!-- Sign In / Create Account Modal with Password -->
+        <!-- Sign In / Create Account Modal with Smart Number Check & Password -->
         ${state.showAuthModal ? `
           <div class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4" onclick="closeAuthModal()">
-            <form onsubmit="submitPasswordAuth(event)" class="bg-white rounded-2xl max-w-xl w-full p-5 space-y-4 shadow-2xl" onclick="event.stopPropagation()">
+            <form onsubmit="submitPasswordAuth(event)" class="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-5 space-y-4 shadow-2xl" onclick="event.stopPropagation()">
               <div class="flex justify-between items-start">
                 <div>
                   <h3 class="text-lg font-extrabold">${state.lang==='bn'?'সাইন ইন বা নতুন অ্যাকাউন্ট':'Sign In or Create Account'}</h3>
@@ -555,23 +559,36 @@
               </div>
               <div>
                 <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'বাংলাদেশি মোবাইল নম্বর':'Bangladesh Mobile Number'} *</label>
-                <input value="${state.authMobile}" oninput="state.authMobile=this.value" required placeholder="017XXXXXXXX" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-              </div>
-              <div class="grid grid-cols-1 ${state.authMode==='register'?'sm:grid-cols-2':''} gap-3">
-                <div>
-                  <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'পাসওয়ার্ড':'Password'} *</label>
-                  <div class="relative">
-                    <input type="${state.authShowPass?'text':'password'}" value="${state.authPassword}" oninput="state.authPassword=this.value" required placeholder="${state.lang==='bn'?'কমপক্ষে ৬ অক্ষর':'Min 6 characters'}" class="w-full rounded-xl border border-slate-300 px-3 pr-14 py-2 text-sm" />
-                    <button type="button" onclick="toggleAuthPass()" class="absolute right-2.5 top-2 text-xs font-bold text-slate-500 hover:text-slate-800">${state.authShowPass?(state.lang==='bn'?'লুকান':'Hide'):(state.lang==='bn'?'দেখুন':'Show')}</button>
-                  </div>
+                <div class="flex gap-2">
+                  <input value="${state.authMobile}" oninput="onAuthMobileInput(this.value)" required placeholder="017XXXXXXXX" class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                  ${state.authMode==='login' && !authAccountExists ? `
+                    <button type="button" onclick="checkAuthMobile()" class="rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800">${state.lang==='bn'?'পরবর্তী':'Continue'}</button>
+                  ` : ''}
                 </div>
-                ${state.authMode==='register' ? `
-                  <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'পাসওয়ার্ড নিশ্চিত করুন':'Confirm Password'} *</label>
-                    <input type="${state.authShowPass?'text':'password'}" value="${state.authConfirmPassword}" oninput="state.authConfirmPassword=this.value" required placeholder="${state.lang==='bn'?'পুনরায় লিখুন':'Re-enter password'}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-                  </div>
-                ` : ''}
               </div>
+              ${showMissingNotice ? `
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <p class="text-xs font-semibold text-amber-900">${state.lang==='bn'?'এই মোবাইল নম্বরে কোনো অ্যাকাউন্ট পাওয়া যায়নি।':'No account found with this mobile number.'}</p>
+                  <button type="button" onclick="setAuthMode('register')" class="rounded-xl bg-crimson-700 px-3 py-2 text-xs font-bold text-white hover:bg-crimson-800">${state.lang==='bn'?'নতুন অ্যাকাউন্ট তৈরি করুন':'Go to Create Account'}</button>
+                </div>
+              ` : ''}
+              ${(showLoginPassword || state.authMode==='register') ? `
+                <div class="grid grid-cols-1 ${state.authMode==='register'?'sm:grid-cols-2':''} gap-3">
+                  <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'পাসওয়ার্ড':'Password'} *</label>
+                    <div class="relative">
+                      <input type="${state.authShowPass?'text':'password'}" value="${state.authPassword}" oninput="state.authPassword=this.value" required placeholder="${state.lang==='bn'?'কমপক্ষে ৬ অক্ষর':'Min 6 characters'}" class="w-full rounded-xl border border-slate-300 px-3 pr-14 py-2 text-sm" />
+                      <button type="button" onclick="toggleAuthPass()" class="absolute right-2.5 top-2 text-xs font-bold text-slate-500 hover:text-slate-800">${state.authShowPass?(state.lang==='bn'?'লুকান':'Hide'):(state.lang==='bn'?'দেখুন':'Show')}</button>
+                    </div>
+                  </div>
+                  ${state.authMode==='register' ? `
+                    <div>
+                      <label class="mb-1 block text-xs font-semibold text-slate-700">${state.lang==='bn'?'পাসওয়ার্ড নিশ্চিত করুন':'Confirm Password'} *</label>
+                      <input type="${state.authShowPass?'text':'password'}" value="${state.authConfirmPassword}" oninput="state.authConfirmPassword=this.value" required placeholder="${state.lang==='bn'?'পুনরায় লিখুন':'Re-enter password'}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+                    </div>
+                  ` : ''}
+                </div>
+              ` : ''}
               ${state.authMode==='register' ? `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -586,12 +603,14 @@
                   </div>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p class="mb-2 text-xs font-bold text-slate-700">${state.lang==='bn'?'৫-স্তরের স্থায়ী ঠিকানা':'5-Tier Home Location'}</p>
+                  <p class="mb-2 text-xs font-bold text-slate-700">${state.lang==='bn'?'ঠিকানা (Address)':'Address'} *</p>
                   ${renderLocSelects(state.authLoc, 'setAuthLoc', false)}
                 </div>
               ` : ''}
               ${state.authError ? `<p class="text-xs font-bold text-crimson-700">${state.authError}</p>` : ''}
-              <button type="submit" class="w-full rounded-xl bg-crimson-700 py-2.5 text-sm font-bold text-white hover:bg-crimson-800">${state.authMode==='login'?(state.lang==='bn'?'সাইন ইন করুন':'Sign In'):(state.lang==='bn'?'অ্যাকাউন্ট তৈরি করুন':'Create Account')}</button>
+              ${(state.authMode==='register' || showLoginPassword) ? `
+                <button type="submit" class="w-full rounded-xl bg-crimson-700 py-2.5 text-sm font-bold text-white hover:bg-crimson-800">${state.authMode==='login'?(state.lang==='bn'?'সাইন ইন করুন':'Sign In'):(state.lang==='bn'?'অ্যাকাউন্ট তৈরি করুন':'Create Account')}</button>
+              ` : ''}
             </form>
           </div>
         ` : ''}
@@ -686,6 +705,23 @@
     window.closeAuthModal = () => { state.showAuthModal = false; render(); };
     window.setAuthMode = (m) => { state.authMode = m; state.authError=''; render(); };
     window.toggleAuthPass = () => { state.authShowPass = !state.authShowPass; render(); };
+    window.onAuthMobileInput = (val) => {
+      state.authMobile = val;
+      state.authCheckedMobile = null;
+      const m = val.trim().replace(/^\+?88/, '');
+      if (/^(01[3-9]\d{8})$/.test(m) && state.users.some(u => u.mobile === m)) {
+        render();
+      }
+    };
+    window.checkAuthMobile = () => {
+      if (!/^(?:\+?88)?01[3-9]\d{8}$/.test(state.authMobile.trim())) {
+        state.authError = state.lang==='bn' ? 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন (যেমন 017XXXXXXXX)' : 'Enter a valid BD mobile number (e.g. 017XXXXXXXX)';
+        render(); return;
+      }
+      state.authCheckedMobile = state.authMobile.trim().replace(/^\+?88/, '');
+      state.authError = '';
+      render();
+    };
     window.signOutUser = () => { state.currentUserId = null; persist(); notify('Signed out.'); };
     window.submitPasswordAuth = (e) => {
       e.preventDefault();
@@ -693,19 +729,24 @@
         state.authError = state.lang==='bn' ? 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন (যেমন 017XXXXXXXX)' : 'Enter a valid BD mobile number (e.g. 017XXXXXXXX)';
         render(); return;
       }
-      if (!state.authPassword || state.authPassword.length < 6) {
-        state.authError = state.lang==='bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' : 'Password must be at least 6 characters.';
-        render(); return;
-      }
       const m = state.authMobile.trim().replace(/^\+?88/, '');
       const existing = state.users.find(u => u.mobile === m);
       if (state.authMode === 'login') {
-        if (!existing || state.credentials[m] !== state.authPassword) {
+        if (!existing) {
+          state.authCheckedMobile = m;
+          state.authError = '';
+          render(); return;
+        }
+        if (!state.authPassword || state.authPassword.length < 6) {
+          state.authError = state.lang==='bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' : 'Password must be at least 6 characters.';
+          render(); return;
+        }
+        if (state.credentials[m] !== state.authPassword) {
           state.authError = state.lang==='bn' ? 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়।' : 'Incorrect mobile number or password.';
           render(); return;
         }
         state.currentUserId = existing.id;
-        state.showAuthModal = false; state.authPassword = ''; state.authError = '';
+        state.showAuthModal = false; state.authPassword = ''; state.authCheckedMobile = null; state.authError = '';
         state.tab = 'dashboard'; persist();
         notify(state.lang==='bn' ? 'সফলভাবে সাইন ইন হয়েছে!' : 'Signed in successfully!');
         return;
@@ -719,21 +760,31 @@
         state.authError = state.lang==='bn' ? 'আপনার পূর্ণ নাম লিখুন।' : 'Please enter your Full Name.';
         render(); return;
       }
+      if (!state.authPassword || state.authPassword.length < 6) {
+        state.authError = state.lang==='bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' : 'Password must be at least 6 characters.';
+        render(); return;
+      }
       if (state.authPassword !== state.authConfirmPassword) {
         state.authError = state.lang==='bn' ? 'পাসওয়ার্ড দুটি মেলেনি।' : 'Passwords do not match.';
         render(); return;
       }
+      if (!state.authLoc.div || !state.authLoc.dist || !state.authLoc.upz) {
+        state.authError = state.lang==='bn' ? 'অনুগ্রহ করে বিভাগ, জেলা ও উপজেলা/থানা নির্বাচন করুন।' : 'Please select Division, District, and Upazila/Thana.';
+        render(); return;
+      }
       const created = {
         id:'usr-'+Date.now(), name: state.authName.trim(), mobile:m, whatsapp:m,
-        blood: state.authBlood, div: state.authLoc.div || 'div-dhaka',
-        dist: state.authLoc.dist || 'dist-dhaka', upz: state.authLoc.upz || 'upz-dhanmondi',
-        po: state.authLoc.po || 'po-dhanmondi-1205', vil: state.authLoc.vil || 'vil-kalabagan',
+        blood: state.authBlood, div: state.authLoc.div,
+        dist: state.authLoc.dist, upz: state.authLoc.upz,
+        po: state.authLoc.po, vil: state.authLoc.vil,
         manualAvailable:true, hidePhone:false, lastDonation:null, donations:0
       };
       state.credentials[m] = state.authPassword;
       state.users.unshift(created);
       state.currentUserId = created.id;
-      state.showAuthModal = false; state.authPassword = ''; state.authConfirmPassword = ''; state.authError = '';
+      state.showAuthModal = false; state.authPassword = ''; state.authConfirmPassword = '';
+      state.authLoc = { div:'', dist:'', upz:'', po:'', vil:'' };
+      state.authCheckedMobile = null; state.authError = '';
       state.tab = 'dashboard'; persist();
       notify(state.lang==='bn' ? 'অ্যাকাউন্ট তৈরি ও সাইন ইন সম্পন্ন!' : 'Account created and signed in!');
     };
