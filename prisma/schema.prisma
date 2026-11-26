@@ -1,0 +1,188 @@
+// Prisma Schema for RoktoBondhu BD (Unified Donor & Requester Architecture)
+// Compatible with PostgreSQL in production.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BloodGroup {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+enum DonorAvailability {
+  AVAILABLE
+  UNAVAILABLE
+  ON_COOLDOWN
+}
+
+enum HeroBadgeTier {
+  NONE
+  BRONZE
+  SILVER
+  GOLD
+  LIFESAVER
+}
+
+enum UrgencyLevel {
+  EMERGENCY
+  WITHIN_24H
+  SCHEDULED
+}
+
+enum RequestStatus {
+  ACTIVE
+  IN_PROGRESS
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+enum MatchStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum DonationSource {
+  INTERNAL_MATCH
+  EXTERNAL_LOG
+}
+
+model User {
+  id                  String            @id @default(cuid())
+  fullName            String
+  mobileNumber        String            @unique
+  isMobileVerified    Boolean           @default(false)
+  otpCodeHash         String?
+  otpExpiresAt        DateTime?
+  secondaryPhone      String?
+  whatsappNumber      String?
+  bloodGroup          BloodGroup
+
+  // 5-Tier Bangladesh Administrative Location Hierarchy
+  divisionId          String
+  districtId          String
+  upazilaId           String
+  postOfficeId        String
+  villageId           String
+
+  // Donor Availability & 90-Day Cooldown Tracking
+  manualAvailable     Boolean           @default(true)
+  availabilityStatus  DonorAvailability @default(AVAILABLE)
+  lastDonationDate    DateTime?
+
+  // Privacy Settings: masks phone numbers until an emergency match is confirmed
+  hidePhoneNumber     Boolean           @default(false)
+
+  // Gamification & Activity Stats
+  totalDonations      Int               @default(0)
+  heroBadge           HeroBadgeTier     @default(NONE)
+  lastActiveAt        DateTime          @default(now())
+
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  // Unified Account Relations: Acts as both Requester and Donor
+  bloodRequests       BloodRequest[]    @relation("RequesterRequests")
+  donorMatches        EmergencyMatch[]  @relation("DonorMatches")
+  donationLogs        DonationLog[]
+
+  @@index([bloodGroup, availabilityStatus, manualAvailable])
+  @@index([divisionId, districtId, upazilaId])
+  @@index([lastDonationDate])
+}
+
+model BloodRequest {
+  id                  String        @id @default(cuid())
+  requesterId         String
+  requester           User          @relation("RequesterRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  patientName         String
+  bloodGroupNeeded    BloodGroup
+  unitsRequired       Int           @default(1)
+  unitsFulfilled      Int           @default(0)
+  urgencyLevel        UrgencyLevel  @default(EMERGENCY)
+
+  // Hospital Details & Location
+  hospitalName        String
+  wardCabinBed        String
+  divisionId          String
+  districtId          String
+  upazilaId           String
+  postOfficeId        String?
+  villageOrArea       String?
+
+  // Contacts
+  contactPersonName   String
+  primaryMobile       String
+  alternateMobile     String?
+  medicalReason       String
+
+  // Lifecycle & 48-Hour Auto-Expiry
+  status              RequestStatus @default(ACTIVE)
+  isActive            Boolean       @default(true)
+  expiresAt           DateTime
+  extensionCount      Int           @default(0)
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  matches             EmergencyMatch[]
+  donationLogs        DonationLog[]
+
+  @@index([status, isActive, expiresAt])
+  @@index([bloodGroupNeeded, divisionId, districtId, upazilaId])
+  @@index([requesterId])
+}
+
+model EmergencyMatch {
+  id                  String      @id @default(cuid())
+  requestId           String
+  request             BloodRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  donorId             String
+  donor               User         @relation("DonorMatches", fields: [donorId], references: [id], onDelete: Cascade)
+
+  status              MatchStatus  @default(PENDING)
+  // Becomes true when donor accepts or requester+donor confirm emergency match
+  phoneRevealed       Boolean      @default(false)
+  confirmedAt         DateTime?
+  completedAt         DateTime?
+  notes               String?
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@unique([requestId, donorId])
+  @@index([donorId, status])
+  @@index([requestId, status])
+}
+
+model DonationLog {
+  id                  String         @id @default(cuid())
+  donorId             String
+  donor               User           @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  requestId           String?
+  request             BloodRequest?  @relation(fields: [requestId], references: [id], onDelete: SetNull)
+
+  source              DonationSource @default(INTERNAL_MATCH)
+  donatedAt           DateTime
+  hospitalOrCenter    String?
+  notes               String?
+
+  createdAt           DateTime       @default(now())
+
+  @@index([donorId, donatedAt])
+}
