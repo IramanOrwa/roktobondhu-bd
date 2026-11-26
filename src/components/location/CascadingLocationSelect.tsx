@@ -6,7 +6,6 @@ import {
   getDivisions,
   getPostOfficesByUpazila,
   getUpazilasByDistrict,
-  getVillagesByPostOffice,
 } from '@/data/bangladesh-locations';
 import { useTranslation } from '@/i18n/context';
 import type { LocationSelection } from '@/types';
@@ -37,15 +36,6 @@ export function CascadingLocationSelect({
   const postOffices =
     value.divisionId && value.districtId && value.upazilaId
       ? getPostOfficesByUpazila(value.divisionId, value.districtId, value.upazilaId)
-      : [];
-  const villages =
-    value.divisionId && value.districtId && value.upazilaId && value.postOfficeId
-      ? getVillagesByPostOffice(
-          value.divisionId,
-          value.districtId,
-          value.upazilaId,
-          value.postOfficeId
-        )
       : [];
 
   const handleDivisionChange = (divisionId: string) => {
@@ -81,11 +71,10 @@ export function CascadingLocationSelect({
     onChange({
       ...value,
       postOfficeId,
-      villageId: '',
     });
   };
 
-  const selectClass =
+  const controlClass =
     'w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-crimson-600 focus:outline-none focus:ring-2 focus:ring-crimson-100 disabled:bg-slate-100 disabled:text-slate-400';
 
   const labelClass = 'mb-1 block text-xs font-semibold text-slate-700';
@@ -104,7 +93,7 @@ export function CascadingLocationSelect({
         <select
           value={value.divisionId}
           onChange={(e) => handleDivisionChange(e.target.value)}
-          className={selectClass}
+          className={controlClass}
         >
           <option value="">
             {allowAll ? t.location.allDivisions : t.common.selectOption}
@@ -124,7 +113,7 @@ export function CascadingLocationSelect({
           value={value.districtId}
           onChange={(e) => handleDistrictChange(e.target.value)}
           disabled={!value.divisionId}
-          className={selectClass}
+          className={controlClass}
         >
           <option value="">
             {!value.divisionId
@@ -148,7 +137,7 @@ export function CascadingLocationSelect({
           value={value.upazilaId}
           onChange={(e) => handleUpazilaChange(e.target.value)}
           disabled={!value.districtId}
-          className={selectClass}
+          className={controlClass}
         >
           <option value="">
             {!value.districtId
@@ -165,57 +154,43 @@ export function CascadingLocationSelect({
         </select>
       </div>
 
-      {/* Tier 4: Post Office */}
-      {requiredTiers >= 5 || postOffices.length > 0 ? (
-        <div>
-          <label className={labelClass}>{t.location.postOffice}</label>
-          <select
-            value={value.postOfficeId}
-            onChange={(e) => handlePostOfficeChange(e.target.value)}
-            disabled={!value.upazilaId}
-            className={selectClass}
-          >
-            <option value="">
-              {!value.upazilaId
-                ? t.location.selectUpazilaFirst
-                : allowAll
-                  ? t.location.allPostOffices
-                  : t.common.selectOption}
+      {/* Tier 4: Post Office (Area-wise with Post Code) */}
+      <div>
+        <label className={labelClass}>{t.location.postOffice}</label>
+        <select
+          value={value.postOfficeId}
+          onChange={(e) => handlePostOfficeChange(e.target.value)}
+          disabled={!value.upazilaId}
+          className={controlClass}
+        >
+          <option value="">
+            {!value.upazilaId
+              ? t.location.selectUpazilaFirst
+              : allowAll
+                ? t.location.allPostOffices
+                : t.common.selectOption}
+          </option>
+          {postOffices.map((po) => (
+            <option key={po.id} value={po.id}>
+              {po[lang]} ({po.postCode})
             </option>
-            {postOffices.map((po) => (
-              <option key={po.id} value={po.id}>
-                {po[lang]} ({po.postCode})
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : null}
+          ))}
+        </select>
+      </div>
 
-      {/* Tier 5: Village / Area */}
-      {requiredTiers >= 5 || villages.length > 0 ? (
+      {/* Tier 5: Village / Area (Typeable Text Input) */}
+      {requiredTiers >= 5 && (
         <div>
           <label className={labelClass}>{t.location.village}</label>
-          <select
+          <input
+            type="text"
             value={value.villageId}
             onChange={(e) => onChange({ ...value, villageId: e.target.value })}
-            disabled={!value.postOfficeId}
-            className={selectClass}
-          >
-            <option value="">
-              {!value.postOfficeId
-                ? t.location.selectPostOfficeFirst
-                : allowAll
-                  ? t.location.allVillages
-                  : t.common.selectOption}
-            </option>
-            {villages.map((vil) => (
-              <option key={vil.id} value={vil.id}>
-                {vil[lang]}
-              </option>
-            ))}
-          </select>
+            placeholder={t.location.villagePlaceholder}
+            className={controlClass}
+          />
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

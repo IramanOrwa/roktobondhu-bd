@@ -51,6 +51,7 @@ export interface Dictionary {
     upazila: string;
     postOffice: string;
     village: string;
+    villagePlaceholder: string;
     allDivisions: string;
     allDistricts: string;
     allUpazilas: string;

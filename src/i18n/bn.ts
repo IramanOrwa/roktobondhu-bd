@@ -54,6 +54,7 @@ export const bnDictionary: Dictionary = {
     upazila: 'উপজেলা / থানা',
     postOffice: 'ডাকঘর (পোস্ট অফিস)',
     village: 'গ্রাম / এলাকা',
+    villagePlaceholder: 'গ্রাম / রোড / এলাকার নাম লিখুন...',
     allDivisions: 'সকল বিভাগ',
     allDistricts: 'সকল জেলা',
     allUpazilas: 'সকল উপজেলা / থানা',

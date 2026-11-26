@@ -54,6 +54,7 @@ export const enDictionary: Dictionary = {
     upazila: 'Upazila / Thana',
     postOffice: 'Post Office',
     village: 'Village / Area',
+    villagePlaceholder: 'Type Village / Road / Area...',
     allDivisions: 'All Divisions',
     allDistricts: 'All Districts',
     allUpazilas: 'All Upazilas / Thanas',
